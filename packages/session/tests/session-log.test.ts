@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { createTestContext } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
-import type { SessionLog } from '@mini-dsh/session'
+import type { SessionEvent, SessionLog } from '@mini-dsh/session'
 
 describe('session-log 服务（M2：日志真源的只读入口）', () => {
-  it('openSession 后会话 ctx 提供 session-log 服务，初始快照即头记录', async () => {
+  it('openSession 后会话 ctx 提供 session-log，初始快照即头记录', async () => {
     const { ctx, dispose } = await createTestContext()
     const meta = { id: 's1', title: '', createdAt: 123 }
     const session = await openSession(ctx, { id: 's1', meta })
     try {
-      const log = session.ctx.get('session-log')!
+      const log: SessionLog = session.ctx['session-log']
       expect(log).toBeDefined()
       expect(log.events).toEqual([
         { seq: 1, type: 'session/created', ts: 123, payload: meta },
@@ -23,7 +23,7 @@ describe('session-log 服务（M2：日志真源的只读入口）', () => {
     const { ctx, dispose } = await createTestContext()
     const session = await openSession(ctx, { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } })
     try {
-      const log: SessionLog = session.ctx.get('session-log')!
+      const log: SessionLog = session.ctx['session-log']
       session.ctx.emit('user', { content: '你好' })
       expect(log.events.map((e) => e.type)).toEqual(['session/created', 'user'])
       expect(log.events[1]!.payload).toEqual({ content: '你好' })
@@ -36,13 +36,32 @@ describe('session-log 服务（M2：日志真源的只读入口）', () => {
     const { ctx, dispose } = await createTestContext()
     const session = await openSession(ctx, { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } })
     try {
-      const log: SessionLog = session.ctx.get('session-log')!
+      const log: SessionLog = session.ctx['session-log']
       const snapshot = log.events
-      snapshot.length = 0
+      expect(snapshot).not.toBe(log.events)
+      ;(snapshot as SessionEvent[]).length = 0
       expect(log.events).toHaveLength(1)
       session.ctx.emit('user', { content: '新' })
       expect(snapshot).toHaveLength(0)
       expect(log.events).toHaveLength(2)
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('并存的多个会话各有各的 session-log（互不串）', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const a = await openSession(ctx, { id: 'a', meta: { id: 'a', title: '', createdAt: 0 } })
+    const b = await openSession(ctx, { id: 'b', meta: { id: 'b', title: '', createdAt: 0 } })
+    try {
+      a.ctx.emit('user', { content: 'A' })
+      const logA: SessionLog = a.ctx['session-log']
+      const logB: SessionLog = b.ctx['session-log']
+      expect(logA.events.map((e) => e.payload)).toEqual([
+        { id: 'a', title: '', createdAt: 0 },
+        { content: 'A' },
+      ])
+      expect(logB.events.map((e) => e.type)).toEqual(['session/created'])
     } finally {
       await dispose()
     }

@@ -16,6 +16,17 @@ export interface SessionConfig {
 }
 
 /**
+ * 日志真源的只读入口（会话 ctx 上的 `session-log` 服务）。
+ *
+ * 输出侧：词汇事件经桥接追加进日志；输入侧：loop 等消费者从这里读快照做投影。
+ * 快照是副本——拿到后日志继续追加不会改变旧快照，改快照也动不了日志。
+ * M5 的 Trajectory 投影同样从这里读（同一个真源，不同视图）。
+ */
+export interface SessionLog {
+  readonly events: readonly SessionEvent[]
+}
+
+/**
  * 一个会话 = 一段 append-only 事件日志 + 一个挂桥接监听器的子 ctx。
  *
  * 桥接模型（M1 关键设计）：agent/测试插件在**会话自己的 ctx** 上 emit 词汇事件，
@@ -44,6 +55,21 @@ export class Session {
     const initial = config.events ?? [createHeaderEvent(config.meta)]
     this.events.push(...initial)
     this.nextSeq = (this.events.at(-1)?.seq ?? 0) + 1
+
+    // 日志真源的只读入口：消费方（M2 的 loop、M5 的投影）从会话 ctx 读日志快照，
+    // 而不是去拿 Session 对象——"输出写日志、输入读日志"都走会话 ctx 的服务。
+    // 注意：cordis 的服务键按根 ctx 作用域唯一（isolate 链共享），并存会话若各自
+    // ctx.provide('session-log') 会撞键（第二会话报"already registered"）；
+    // 与 events 同款处理——defineProperty 定义会话 ctx 自有属性遮蔽继承链。
+    const self = this
+    Object.defineProperty(ctx, 'session-log', {
+      value: {
+        get events() {
+          return [...self.events]
+        },
+      },
+      configurable: true,
+    })
 
     // 隔离：会话拥有自己的事件总线实例。子 ctx 沿原型链共享根 ctx 的 EventsService，
     // 若不隔离，同一 runtime 下多个并存会话会互相收到对方的 emit（桥接串台）。
@@ -101,4 +127,12 @@ export async function openSession(parent: Context, config: SessionConfig): Promi
   })
   if (!session) throw new Error('openSession: 会话插件装载失败')
   return session
+}
+
+// 服务类型增强：会话 ctx 上可经 `ctx['session-log']` 取到日志只读入口
+// （自有属性遮蔽，不经 cordis 服务注册表，见 Session 构造器的说明）。
+declare module 'cordis' {
+  interface Context {
+    'session-log': SessionLog
+  }
 }
