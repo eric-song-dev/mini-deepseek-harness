@@ -32,11 +32,12 @@
 
 ## 当前状态指针
 
-- 里程碑：**M4（待开始）** —— 详细 spec：`docs/milestones/M4.md`（已定稿，状态 proposed）
+- 里程碑：**M5（待开始）** —— 详细 spec：`docs/milestones/M5.md`（已定稿，状态 proposed）
 - 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`
 - M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - M1 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m1-session-日志决策.md`
 - M2 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m2-llm-与-loop-决策.md`
 - M3 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m3-tools-决策.md`
+- M4 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m4-web-决策.md`
 - 总纲：`docs/requirements.md`（v0.1，需求已定稿）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）

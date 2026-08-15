@@ -1,7 +1,7 @@
 # 需求定稿：mini-deepseek-harness v0.1
 
 - **日期**：2026-08-16
-- **状态**：`proposed`（需求定稿；M0、M1、M2、M3 已完成，当前里程碑 M4 待开始）
+- **状态**：`proposed`（需求定稿；M0–M4 已完成，当前里程碑 M5 待开始）
 
 ## 背景
 
@@ -31,8 +31,28 @@
 ## 下一步（下个 session 起）
 
 - 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M4.md`（**已定稿**，状态 proposed，M3 收尾时撰写：RPC/WS 桥 +
-  会话列表 + composer + 流式 + tool 卡片，任务拆解/TDD 顺序/验收/教程要求齐备）。
+- 执行依据：`docs/milestones/M5.md`（**已定稿**，状态 proposed，M4 收尾时撰写：
+  Trajectory 简化视图 + skills 子系统，任务拆解/TDD 顺序/验收/教程要求齐备）。
+
+## M4 完成快照（2026-08-16 增补）
+
+- **状态**：M4 已实现并通过验收（全仓 222 测试全绿（node+jsdom 双 workspace）、
+  typecheck 全绿、demo:web 零 key 可跑（浏览器人工路径 + 脚本化 WS 客户端双验证）、
+  教程四个练习实测通过——含 slot 改名与分片断言的两次红绿翻转）。状态指针已改
+  M5 待开始，M5 spec 已定稿（proposed）。
+- M4 落地物：`@mini-dsh/web`（RpcBridge seam + 协议 + 内存直连/WS 双传输 + webHost
+  （HTTP 静态 + WS 升级 + session 门面四方法 + 会话常驻 + session/append 桥接））、
+  `@mini-dsh/client`（ClientBridge seam + Slot 注册表（框架无关）+ session store +
+  显示投影 + clientShell + React 装配（extras 区挂未列 slot）+ 会话列表/composer/
+  流式气泡/tool 卡片三面板）、`@mini-dsh/bundle-web`（webBundle 组合）、`apps/web`
+  （Vite entry 壳 + 构建冒烟）、session 词汇 +assistant/stream 与 session/append、
+  llm adapter SSE 流式、loop config.stream、fakellm chunks/chunkDelay、
+  vitest 拆 node/jsdom 双 workspace、e2e（真 host + 脚本化 WS 客户端，断线重连
+  resume）、demo:web（循环台词本 6 轮）、教程 `docs/tutorials/M4-web.md` +
+  练习文件（my-first-slot.test.tsx / my-ws-client.ts）。
+- spec 预拍板八条逐条核对落地（定夺点 A/B、流式、测试拆分、e2e 路径等）；契约修订
+  一处（session.create 返回 {meta, events} 与 resume 对称）。关键决策已归档：
+  `implemented/architecture/2026-08-16-m4-web-决策.md`。
 
 ## M3 完成快照（2026-08-16 增补）
 
