@@ -1,4 +1,6 @@
 import './events'
 
 export * from './events'
-export type { SessionMeta } from './persistence'
+export { Session, openSession } from './session'
+export type { SessionConfig } from './session'
+export type { SessionMeta, SessionPersistence } from './persistence'
