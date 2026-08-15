@@ -79,10 +79,10 @@ export function createBridgeClient(transport: ClientTransport): ClientBridge {
   })
 
   return {
-    request(method, params) {
-      return new Promise((resolve, reject) => {
+    request<T>(method: string, params?: unknown): Promise<T> {
+      return new Promise<T>((resolve, reject) => {
         const requestId = `req-${++nextId}`
-        pending.set(requestId, { resolve, reject })
+        pending.set(requestId, { resolve: resolve as (value: unknown) => void, reject })
         transport.send({ kind: 'request', requestId, method, params })
       })
     },
