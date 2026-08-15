@@ -9,11 +9,16 @@ import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import type { SessionEvent } from '@mini-dsh/session'
 
 const dir = resolve(process.argv[2] ?? '.mini-dsh/sessions')
-const id = process.argv[3]
-if (!id) {
-  console.error('用法：pnpm tsx packages/session/examples/my-resume.ts [目录] <会话id>')
-  process.exit(1)
+
+function requireSessionId(): string {
+  const value = process.argv[3]
+  if (value === undefined) {
+    throw new Error('用法：pnpm tsx packages/session/examples/my-resume.ts [目录] <会话id>')
+  }
+  return value
 }
+
+const id = requireSessionId()
 
 function render(events: readonly SessionEvent[]): string {
   return events
