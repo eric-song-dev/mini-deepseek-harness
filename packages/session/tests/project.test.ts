@@ -39,4 +39,81 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
   it('空日志投影成空数组', () => {
     expect(projectMessages([])).toEqual([])
   })
+
+  it('assistant 带 toolCalls 时原样映射；tool 调用事件（无 output）跳过', () => {
+    const events: SessionEvent[] = [
+      { seq: 2, type: 'user', ts: 1, payload: { content: '读文件' } },
+      {
+        seq: 3,
+        type: 'assistant',
+        ts: 2,
+        payload: { content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+      },
+      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read_file', input: { path: 'a.txt' } } },
+    ]
+
+    expect(projectMessages(events)).toEqual([
+      { role: 'user', content: '读文件' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }],
+      },
+    ])
+  })
+
+  it('tool 结果事件映射成 role:tool 消息：toolCallId 按 assistant toolCalls 顺序配对，content 为 output 的 JSON 串', () => {
+    const events: SessionEvent[] = [
+      { seq: 2, type: 'user', ts: 1, payload: { content: '办两件事' } },
+      {
+        seq: 3,
+        type: 'assistant',
+        ts: 2,
+        payload: {
+          content: '',
+          toolCalls: [
+            { id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } },
+            { id: 'c2', name: 'edit_file', arguments: { path: 'a.txt', oldText: 'x', newText: 'y' } },
+          ],
+        },
+      },
+      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read_file', input: { path: 'a.txt' } } },
+      { seq: 5, type: 'tool', ts: 4, payload: { name: 'read_file', input: { path: 'a.txt' }, output: { content: '内容' } } },
+      {
+        seq: 6,
+        type: 'tool',
+        ts: 5,
+        payload: { name: 'edit_file', input: { path: 'a.txt' }, output: { replaced: true } },
+      },
+    ]
+
+    expect(projectMessages(events)).toEqual([
+      { role: 'user', content: '办两件事' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [
+          { id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } },
+          { id: 'c2', name: 'edit_file', arguments: { path: 'a.txt', oldText: 'x', newText: 'y' } },
+        ],
+      },
+      { role: 'tool', toolCallId: 'c1', content: '{"content":"内容"}' },
+      { role: 'tool', toolCallId: 'c2', content: '{"replaced":true}' },
+    ])
+  })
+
+  it('没有可配对的 toolCalls 时的孤立结果事件：合成 tool-<seq> id（历史不丢消息）', () => {
+    const events: SessionEvent[] = [
+      {
+        seq: 9,
+        type: 'tool',
+        ts: 1,
+        payload: { name: 'bash', input: { command: 'ls' }, output: { exitCode: 0 } },
+      },
+    ]
+
+    expect(projectMessages(events)).toEqual([
+      { role: 'tool', toolCallId: 'tool-9', content: '{"exitCode":0}' },
+    ])
+  })
 })

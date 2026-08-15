@@ -66,4 +66,19 @@ describe('session-log 服务（M2：日志真源的只读入口）', () => {
       await dispose()
     }
   })
+
+  it('session-meta 提供会话元信息（M3：loop 从它取工具执行的 cwd）', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const meta = { id: 's1', title: '标题', createdAt: 123, cwd: '/work' }
+    const session = await openSession(ctx, { id: 's1', meta })
+    try {
+      expect(session.ctx['session-meta']).toEqual(meta)
+      // 自有属性遮蔽（与 session-log 同款机制）：并存会话互不串
+      const b = await openSession(ctx, { id: 's2', meta: { id: 's2', title: '', createdAt: 0 } })
+      expect(b.ctx['session-meta'].id).toBe('s2')
+      expect(session.ctx['session-meta'].id).toBe('s1')
+    } finally {
+      await dispose()
+    }
+  })
 })

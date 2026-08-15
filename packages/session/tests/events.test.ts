@@ -60,8 +60,10 @@ describe('Session 事件词汇（M1 契约）', () => {
 
   it('词汇载荷类型随事件名收窄（编译期断言）', async () => {
     expectTypeOf<Parameters<Events['user']>>().toEqualTypeOf<[{ content: string }]>()
-    expectTypeOf<Parameters<Events['assistant']>>().toEqualTypeOf<[{ content: string }]>()
-    expectTypeOf<Parameters<Events['turn/end']>>().toEqualTypeOf<[{ reason: 'done' | 'user' | 'crash' }]>()
+    expectTypeOf<Parameters<Events['assistant']>>().toEqualTypeOf<
+      [{ content: string, toolCalls?: readonly { id: string, name: string, arguments: Record<string, unknown> }[] }]
+    >()
+    expectTypeOf<Parameters<Events['turn/end']>>().toEqualTypeOf<[{ reason: 'done' | 'user' | 'crash' | 'limit' }]>()
     expectTypeOf<Parameters<Events['tool']>>().toEqualTypeOf<
       [{ name: string, input: unknown, output?: unknown }]
     >()

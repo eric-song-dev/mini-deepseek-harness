@@ -115,4 +115,34 @@ describe('SessionManager', () => {
       await dispose()
     }
   })
+
+  it('create 带 cwd 时 meta 携带并随 JSONL 头记录持久化（重启 resume 还在）', async () => {
+    let id: string
+    {
+      const { manager, dispose } = await boot()
+      const session = await manager.create({ title: 'cwd 会话', cwd: '/custom/work' })
+      id = session.id
+      expect(session.meta.cwd).toBe('/custom/work')
+      await dispose()
+    }
+    {
+      const { manager, dispose } = await boot()
+      try {
+        const resumed = await manager.resume(id)
+        expect(resumed.meta.cwd).toBe('/custom/work')
+      } finally {
+        await dispose()
+      }
+    }
+  })
+
+  it('create 不带 cwd 时默认进程 cwd', async () => {
+    const { manager, dispose } = await boot()
+    try {
+      const session = await manager.create({ title: '默认 cwd' })
+      expect(session.meta.cwd).toBe(process.cwd())
+    } finally {
+      await dispose()
+    }
+  })
 })
