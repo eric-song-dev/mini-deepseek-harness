@@ -6,8 +6,8 @@
 
 | 优先级 | 来源 | 何时用 |
 |---|---|---|
-| 1 | 本地已安装的 `@deepseek-ai/dsh`（**真实运行中的 harness**）：`/Users/ericsong/.nvm/versions/node/v22.19.0/lib/node_modules/@deepseek-ai/dsh/`，含 `bin.js`、`lib/`、`config/agent-presets/{code,cordis,minimal,standard}/`（preset 的 `agent.cordis.yml` + `preset.yml` 是组合的最佳实例） | 看 CLI 行为、看真实 profile 组合长什么样 |
-| 2 | 本地克隆的上游源码（建议一次克隆到**本项目仓库外**）：`git clone --depth 1 https://github.com/deepseek-ai/deepseek-harness.git ../deepseek-harness-upstream` | 实现某 seam 前读原版对应 README（离线、可 grep） |
+| 1 | 本地克隆的上游源码（建议一次克隆到**本项目仓库外**）：`git clone --depth 1 git@github.com:deepseek-ai/deepseek-harness.git ../deepseek-harness-upstream` | 实现某 seam 前读原版对应 README（离线、可 grep） 我已安装好，不必安装 |
+| 2 | 本地已安装的 `@deepseek-ai/dsh`（**真实运行中的 harness**）：`/Users/ericsong/.nvm/versions/node/v22.19.0/lib/node_modules/@deepseek-ai/dsh/`，含 `bin.js`、`lib/`、`config/agent-presets/{code,cordis,minimal,standard}/`（preset 的 `agent.cordis.yml` + `preset.yml` 是组合的最佳实例） | 看 CLI 行为、看真实 profile 组合长什么样 |
 | 3 | GitHub 在线（默认分支 `master`）：列目录 `curl -sL https://api.github.com/repos/deepseek-ai/deepseek-harness/contents/<path>`；读文件 `curl -sL https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/<path>` | 本地克隆不可用时按需 fetch 单文件 |
 | 4 | DeepWiki（`https://deepwiki.com/deepseek-ai/deepseek-harness`）+ web_search | 概念性问题、找不到文件时兜底 |
 
