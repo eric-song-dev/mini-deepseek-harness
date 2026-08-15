@@ -82,26 +82,43 @@ async function okResult(response: ResponseMessage): Promise<unknown> {
   return undefined
 }
 
+/** 便捷：create 并解出 meta。 */
+async function createSession(
+  request: (method: string, params?: unknown) => Promise<ResponseMessage>,
+  title: string,
+): Promise<{ id: string; title: string }> {
+  const result = (await okResult(await request('session.create', { title }))) as {
+    meta: { id: string; title: string }
+    events: SessionEvent[]
+  }
+  return result.meta
+}
+
 describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
   it('session.list 初始为空；session.create 两个后按新的在前排列', async () => {
     const host = await makeHost()
     try {
       expect(await okResult(await host.client.request('session.list'))).toEqual([])
-      const first = await okResult(await host.client.request('session.create', { title: '会话一' }))
-      const second = await okResult(await host.client.request('session.create', { title: '会话二' }))
+      const first = await createSession(host.client.request, '会话一')
+      const second = await createSession(host.client.request, '会话二')
       const list = (await okResult(await host.client.request('session.list'))) as Array<{ title: string }>
       expect(list).toHaveLength(2)
-      expect(list[0]).toMatchObject({ title: '会话二', id: (second as { id: string }).id })
-      expect(list[1]).toMatchObject({ title: '会话一', id: (first as { id: string }).id })
+      expect(list[0]).toMatchObject({ title: '会话二', id: second.id })
+      expect(list[1]).toMatchObject({ title: '会话一', id: first.id })
     } finally {
       await host.dispose()
     }
   })
 
-  it('session.create 返回 meta 且会话已常驻：紧接着 session.send 无需 resume', async () => {
+  it('session.create 返回 meta 与初始日志（含 session/created 头记录），且会话已常驻可立即 send', async () => {
     const host = await makeHost({ replies: [{ content: '你好呀' }] })
     try {
-      const meta = (await okResult(await host.client.request('session.create', { title: 's' }))) as { id: string }
+      const result = (await okResult(await host.client.request('session.create', { title: 's' }))) as {
+        meta: { id: string }
+        events: SessionEvent[]
+      }
+      expect(result.events.map((e) => e.type)).toEqual(['session/created'])
+      const meta = result.meta
       const send = await host.client.request('session.send', { id: meta.id, content: '你好' })
       expect(send.ok).toBe(true)
       expect(host.client.events().map((m) => m.event.type)).toEqual([
@@ -122,7 +139,7 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
       stream: true,
     })
     try {
-      const meta = (await okResult(await host.client.request('session.create', { title: 's' }))) as { id: string }
+      const meta = await createSession(host.client.request, 's')
       await host.client.request('session.send', { id: meta.id, content: '回显一下' })
       const events = host.client.events()
       expect(events.map((m) => m.event.type)).toEqual([
@@ -155,7 +172,7 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
   it('session.resume 返回完整历史；断线重连后 send 的新事件推给新连接', async () => {
     const host = await makeHost({ replies: [{ content: '第一答' }, { content: '第二答' }] })
     try {
-      const meta = (await okResult(await host.client.request('session.create', { title: 's' }))) as { id: string }
+      const meta = await createSession(host.client.request, 's')
       await host.client.request('session.send', { id: meta.id, content: '第一问' })
       // 断线：旧连接关闭，重连新内存连接
       host.client.clientSide.close()
@@ -207,7 +224,7 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
     try {
       const badTitle = await host.client.request('session.create', { title: 42 })
       expect(badTitle).toMatchObject({ ok: false, error: { name: 'BadParamsError' } })
-      const meta = (await okResult(await host.client.request('session.create', { title: 's' }))) as { id: string }
+      const meta = await createSession(host.client.request, 's')
       const badSend = await host.client.request('session.send', { id: meta.id })
       expect(badSend).toMatchObject({ ok: false, error: { name: 'BadParamsError' } })
     } finally {
@@ -218,7 +235,7 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
   it('send 触发崩溃（假 LLM 台词耗尽）：响应 ok:false，事件序列落 turn/end(crash)', async () => {
     const host = await makeHost({ replies: [] })
     try {
-      const meta = (await okResult(await host.client.request('session.create', { title: 's' }))) as { id: string }
+      const meta = await createSession(host.client.request, 's')
       const send = await host.client.request('session.send', { id: meta.id, content: '触发崩溃' })
       expect(send).toMatchObject({ ok: false, error: { name: 'FakeLlmExhaustedError' } })
       expect(host.client.events().map((m) => m.event.type)).toEqual(['turn/start', 'user', 'turn/end'])

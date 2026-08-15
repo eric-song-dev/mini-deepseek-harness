@@ -136,7 +136,8 @@ export const webHost = Object.assign(
     bridge.handle('session.create', async (params) => {
       const session = await manager.create(parseCreateParams(params))
       await attachSession(session)
-      return session.meta
+      // 与 resume 对称：返回 meta + 初始日志（至少含 session/created 头记录）
+      return { meta: session.meta, events: session.log }
     })
     bridge.handle('session.resume', async (params) => {
       const id = requireString(params, 'id')
