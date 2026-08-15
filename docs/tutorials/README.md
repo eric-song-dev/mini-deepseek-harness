@@ -7,7 +7,7 @@
 |---|---|---|
 | M0 | [M0-kernel-and-plugins.md](M0-kernel-and-plugins.md) | 什么是 CORDIS：ctx、服务、事件、插件、profile 组合 |
 | M1 | [M1-event-log.md](M1-event-log.md) | 事件日志与真源：为什么 append-only、崩溃恢复 |
-| M2 | （M2 完成时交付） | seam 与假 LLM：agent loop 怎么驱动会话 |
+| M2 | [M2-llm-and-loop.md](M2-llm-and-loop.md) | seam 与假 LLM：agent loop 怎么驱动会话 |
 | M3 | （M3 完成时交付） | 工具注册与执行：工具事件如何进轨迹 |
 | M4 | （M4 完成时交付） | host↔client 桥：流式消息怎么到浏览器 |
 | M5 | （M5 完成时交付） | 投影视图与 skills：轨迹灵魂的最后一环 |
