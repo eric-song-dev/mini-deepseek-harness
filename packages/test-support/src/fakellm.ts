@@ -46,6 +46,13 @@ export interface FakeLlmReply {
   content?: string
   /** 预设的工具调用（模型"要工具"时的输出）；与 content 只能二选一有语义。 */
   toolCalls?: readonly FakeLlmToolCall[]
+  /**
+   * 预设的流式分片序列（M4）：传入 onChunk 时逐片回调，resolve 的 content 为拼接全文。
+   * 与 toolCalls 互斥（同 M3 的 content/toolCalls 二选一语义，同时给出即脚本错误）。
+   */
+  chunks?: readonly string[]
+  /** 每片之间的模拟延迟（毫秒），默认 0；M4 用它模拟"打字机"节奏。 */
+  chunkDelay?: number
   /** 回复前的模拟延迟（毫秒），默认 0。 */
   delay?: number
   /** usage 覆盖；默认 inputTokens=1、outputTokens=1。 */
@@ -62,7 +69,7 @@ export interface FakeLlmRequest {
 
 /** chat 的选项（与 llm 包 ChatOptions 结构相同）。 */
 export interface FakeLlmChatOptions {
-  /** 预留：M4 流式分片消费；M2 的假 LLM 忽略它。 */
+  /** M4 流式分片消费：台词本带 chunks 时逐片回调；不传则分片静默拼成全文。 */
   onChunk?: (chunk: string) => void
   /** 可用工具声明（M3 起 loop 传入；假 LLM 只记录不消费）。 */
   tools?: readonly FakeLlmToolSpec[]
@@ -110,8 +117,18 @@ export function createFakeLlm(options: FakeLlmOptions): FakeLlm {
     const reply = queue.shift()
     if (!reply) throw new FakeLlmExhaustedError(requests.length)
     if (reply.delay) await new Promise((resolve) => setTimeout(resolve, reply.delay))
+    if (reply.chunks !== undefined && reply.toolCalls !== undefined) {
+      throw new Error('假 LLM 台词本错误：chunks 与 toolCalls 互斥，不能同时预设')
+    }
+    if (reply.chunks !== undefined) {
+      const chunkDelay = reply.chunkDelay ?? 0
+      for (const chunk of reply.chunks) {
+        if (chunkDelay > 0) await new Promise((resolve) => setTimeout(resolve, chunkDelay))
+        chatOptions?.onChunk?.(chunk)
+      }
+    }
     const result: FakeLlmResult = {
-      content: reply.content ?? '',
+      content: reply.chunks !== undefined ? reply.chunks.join('') : (reply.content ?? ''),
       usage: {
         inputTokens: reply.usage?.inputTokens ?? 1,
         outputTokens: reply.usage?.outputTokens ?? 1,
