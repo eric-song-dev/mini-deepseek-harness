@@ -15,10 +15,10 @@ append-only 的 `SessionEvent` 序列，loop 只是产生这段序列的来源�
 | 事件名 | 载荷 | 含义 |
 |---|---|---|
 | `turn/start` | 无 | 一轮对话开始 |
-| `turn/end` | `{ reason: 'done' \| 'user' \| 'crash' }` | 一轮对话结束；`crash` 由崩溃恢复补写 |
+| `turn/end` | `{ reason: 'done' \| 'user' \| 'crash' \| 'limit' }` | 一轮对话结束；`crash` 由崩溃恢复补写，`limit` 是 M3 的步数超限 |
 | `user` | `{ content: string }` | 用户消息到达 |
-| `assistant` | `{ content: string }` | 助手回复 |
-| `tool` | `{ name, input, output? }` | 工具调用（M3 起由执行管线落事件） |
+| `assistant` | `{ content: string, toolCalls? }` | 助手回复；M3 起回复可能是"要工具"（带 toolCalls） |
+| `tool` | `{ name, input, output? }` | 工具调用：一次调用落两条（调用无 output、结果带 output） |
 
 另外有**头记录** `session/created`（`seq: 1`，payload 是会话 meta）：它由持久化 `create`
 直接写入文件首行，**不是 emit 出来的** —— 这是日志里唯一不来自事件的记录（"创世记录"）。
@@ -90,6 +90,18 @@ cordis 的子 ctx 沿原型链**共享**根 ctx 的事件总线实例。若不�
 - **`projectMessages(events, { systemPrompt? })`**：日志 → 模型消息数组的投影（M1 预告的
   投影第一次落地）。user/assistant 事件按日志顺序映射、其余跳过、systemPrompt 拼头部；
   M5 的 Trajectory 投影是同一真源上的另一个视图。
+
+### M3 增量：工具历史进投影 + 会话 cwd
+
+- **`projectMessages` 支持工具历史**：assistant 的 `toolCalls` 原样映射；tool **结果事件**
+  映射成 `role:'tool'` 消息（content = `JSON.stringify(output)`，toolCallId 按"最近的
+  assistant toolCalls 顺序"配对；孤立结果合成 `tool-<seq>` id）；tool **调用事件**（无
+  output）跳过——结果没回来，模型不能看到半截。
+- **`session-meta` 入口**（会话 ctx 上的只读属性，`ctx['session-meta']`）：M3 的 loop 从它
+  取工具执行的 cwd（`meta.cwd`，旧会话缺省由消费方兜底进程 cwd）。与 session-log 同款
+  `defineProperty` 遮蔽。
+- **`SessionMeta.cwd?`**：会话工作目录（M3 spec 决策 7）。`SessionManager.create({ cwd })`
+  记入 JSONL 头记录——M1 的头记录格式天然兼容，旧会话 resume 时字段缺省。
 
 ## 试试（零 API key）
 

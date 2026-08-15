@@ -24,15 +24,32 @@ interface LLM {
 }
 ```
 
-- `ChatMessage { role: 'system'|'user'|'assistant', content }` —— 与 session 包的
-  `ProjectedMessage` 结构相同，loop 把日志投影直接当模型输入。
-- `ChatResult { content, usage: { inputTokens, outputTokens } }` —— token 用量是 M5 Trajectory
-  检查器的数据来源，adapter 必须透传。
-- `ChatOptions.onChunk?` —— **M4 流式 UI 的预留缝**：M2 的 loop 只消费非流式，adapter 与假 LLM
-  都不调用它。M4 接 UI 时用同一个 seam，不用改契约。
+- `ChatMessage { role: 'system'|'user'|'assistant'|'tool', content, toolCalls?, toolCallId? }`
+  —— M3 起支持工具调用协议（§工具调用协议）；与 session 包的 `ProjectedMessage` 结构相同，
+  loop 把日志投影直接当模型输入。
+- `ChatResult { content, usage: { inputTokens, outputTokens }, toolCalls? }` —— token 用量是
+  M5 Trajectory 检查器的数据来源，adapter 必须透传；`toolCalls` 是模型"要工具"的输出。
+- `ChatOptions.onChunk?` —— **M4 流式 UI 的预留缝**；`ChatOptions.tools?` —— M3 起 loop 把
+  tools seam 的声明列表放这里传给模型。
 
 任何实现都必须通过 `tests/contracts/llm-contract.ts` 的契约测试（结果 shape、messages 顺序、
-错误以 rejection 传播）。现在有两个实现通过：adapter（假 HTTP 端点）与假 LLM。
+tools 声明透传、带工具历史的消息互通、错误以 rejection 传播）。现在有两个实现通过：
+adapter（假 HTTP 端点）与假 LLM。
+
+## 工具调用协议（M3 增量）
+
+seam 用**解析后的对象**表达工具调用；adapter 独占 wire 格式的转换：
+
+- `ToolCall { id, name, arguments: Record<string, unknown> }` —— arguments 是对象；
+- `ToolSpec { name, description, parameters: JSONSchema }` —— 工具声明（与 tools 包
+  `ToolDeclaration` 结构相同）；
+- 请求：assistant 的 `toolCalls` → wire `tool_calls`（arguments 转 JSON 串）；`role:'tool'`
+  消息 → wire `role:'tool' + tool_call_id`；`tools` 声明 → wire `{type:'function', function}`
+  包裹（未传时不发该字段）；
+- 响应：wire `tool_calls` → 结构化 `ToolCall`（arguments `JSON.parse`；非法 JSON 回退空对象，
+  别让一次坏参数打崩整个 loop）；只有 tool_calls、content 为 null 的响应合法（content 置空串）。
+
+协议细节关在实现里，消费方只见干净的契约——seam 的一贯哲学。
 
 ## adapter（`src/openai.ts`）
 
@@ -50,7 +67,7 @@ interface LLM {
 ## 试试（零 API key）
 
 ```bash
-pnpm vitest run packages/llm   # 契约测试 + 假 HTTP 端点测试，共 13 个
+pnpm vitest run packages/llm   # 契约测试 + 假 HTTP 端点测试（M3 起含工具调用协议，共 21 个）
 ```
 
 真接 DeepSeek API 时（需要 key 与网络）：

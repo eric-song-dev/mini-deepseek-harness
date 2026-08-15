@@ -1,7 +1,7 @@
 # 需求定稿：mini-deepseek-harness v0.1
 
 - **日期**：2026-08-16
-- **状态**：`proposed`（需求定稿；M0、M1、M2 已完成，当前里程碑 M3 待开始）
+- **状态**：`proposed`（需求定稿；M0、M1、M2、M3 已完成，当前里程碑 M4 待开始）
 
 ## 背景
 
@@ -31,8 +31,24 @@
 ## 下一步（下个 session 起）
 
 - 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M3.md`（**已定稿**，状态 proposed，M2 收尾时撰写：tools seam +
-  bash/fs 工具 + 工具调用循环，任务拆解/TDD 顺序/验收/教程要求齐备）。
+- 执行依据：`docs/milestones/M4.md`（**已定稿**，状态 proposed，M3 收尾时撰写：RPC/WS 桥 +
+  会话列表 + composer + 流式 + tool 卡片，任务拆解/TDD 顺序/验收/教程要求齐备）。
+
+## M3 完成快照（2026-08-16 增补）
+
+- **状态**：M3 已实现并通过验收（全仓 149 测试全绿、typecheck 绿、`demo:tools --clean` 零 key
+  可跑（台词本"读→改→总结"驱动真工具，11 行事件全量落盘）、教程四个练习实测通过——含删
+  tool 事件看红的序列断言红绿翻转）。状态指针已改 M4 待开始，M4 spec 已定稿（proposed）。
+- M3 落地物：`@mini-dsh/tools`（Tools seam：声明+execute 注册表、pre/post 管线、approval hook
+  预留位；bash/read/write/edit 四工具）、`@mini-dsh/llm` +ToolCall/ToolSpec（arguments 对象↔
+  JSON 串归 adapter）、`@mini-dsh/session` +投影工具历史（role:tool 结果配对）+session-meta+
+  meta.cwd、`@mini-dsh/agent` +工具调用循环（inject ['llm','tools']、每步重投影、
+  maxSteps→turn/end(limit)、未知工具→crash）、test-support +台词本 toolCalls、
+  演示 `tools-demo.ts` + 教程练习 `my-tools.ts`/`my-tool-loop.test.ts`、
+  教程 `docs/tutorials/M3-tools.md`。
+- spec 预拍板的两处定夺（已归档）：①maxSteps 超限落 `turn/end {reason:'limit'}`（词汇新增）+
+  抛 `MaxStepsExceededError`；②seam 的 arguments 定义为已解析对象，wire JSON 串转换归 adapter。
+  关键决策已归档：`implemented/architecture/2026-08-16-m3-tools-决策.md`。
 
 ## M2 完成快照（2026-08-16 增补）
 

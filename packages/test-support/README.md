@@ -31,6 +31,9 @@ cordis 插件（函数形态），要注入必须先 `ctx.plugin(...)` 装载。
   `delay`、`requests` 记录每次调用收到的 messages（断言"loop 给模型看了什么"）、回复耗尽抛
   `FakeLlmExhaustedError`（防静默空转）。类型与 `@mini-dsh/llm` 的 seam **结构化相同**（不
   import 它，避免 workspace 循环依赖），并已通过 llm 包的 seam 契约测试。
+- `createFakeLlm`（M3 增量）—— 台词本支持 **toolCalls 与文本混排**（`replies` 里的回复可带
+  `toolCalls`，arguments 已解析）；`requests` 快照同时记录该次调用收到的 **tools 声明**；
+  消息类型支持 `role:'tool'` 与 `toolCallId`——所有工具循环测试的"模型视角"观测窗口。
 
 ## 类型约定
 

@@ -12,6 +12,8 @@ pnpm test        # 全量测试（Vitest）
 pnpm typecheck   # 全量类型检查
 pnpm demo:kernel packages/kernel/examples/hello-profile/profile.yml  # M0 demo：启动一个 profile
 pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 API key）
+pnpm demo:agent    # M2 demo：agent loop 三幕（零 API key）
+pnpm demo:tools --clean  # M3 demo：假 LLM 台词本驱动真工具（读→改→总结，零 API key）
 ```
 
 ## 包布局（monorepo）
@@ -20,9 +22,12 @@ pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 
 |---|---|
 | `packages/kernel` | 启动器 + profile 加载（`profile.yml` → cordis ctx），唯一"启动"的地方 |
 | `packages/session` | 事件词汇 + append-only 日志 + SessionPersistence seam + JSONL 后端（日志是真源） |
-| `packages/test-support` | 测试公共语言：测试 ctx、测试服务注入、事件断言 |
+| `packages/test-support` | 测试公共语言：测试 ctx、测试服务注入、事件断言、假 LLM |
+| `packages/llm` | LLM seam + OpenAI 兼容 adapter（默认 DeepSeek；Ollama/vLLM 通用） |
+| `packages/agent` | agent loop：全仓唯一的"拿输入→调模型→写输出"循环，M3 起含工具调用循环 |
+| `packages/tools` | Tools seam（注册表 + 执行管线 + approval hook 预留位）+ bash/文件读/写/编辑 |
 
-其余包随里程碑逐个出现，见 `docs/requirements.md` §7。
+其余包（web/client/bundle-web/skill）随里程碑逐个出现，见 `docs/requirements.md` §7。
 
 ## 文档
 
@@ -39,4 +44,5 @@ pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 
 ## 状态
 
 M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 + resume +
-崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）已完成；M3（tools + 工具调用循环）待开始。
+崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）、M3（Tools seam + bash/fs 工具 + 工具调用循环）
+已完成；M4（Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片）待开始。
