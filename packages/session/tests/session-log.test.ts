@@ -32,6 +32,24 @@ describe('session-log 服务（M2：日志真源的只读入口）', () => {
     }
   })
 
+  it('assistant/stream 分片事件同样经桥接进日志（M4：流式分片也是日志真源的一部分）', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const session = await openSession(ctx, { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } })
+    try {
+      const log: SessionLog = session.ctx['session-log']
+      session.ctx.emit('assistant/stream', { content: '甲' })
+      session.ctx.emit('assistant/stream', { content: '乙' })
+      expect(log.events.map((e) => e.type)).toEqual(['session/created', 'assistant/stream', 'assistant/stream'])
+      expect(log.events.map((e) => e.payload)).toEqual([
+        { id: 's1', title: '', createdAt: 0 },
+        { content: '甲' },
+        { content: '乙' },
+      ])
+    } finally {
+      await dispose()
+    }
+  })
+
   it('快照是副本：修改快照数组不影响内部日志，追加后旧快照不变', async () => {
     const { ctx, dispose } = await createTestContext()
     const session = await openSession(ctx, { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } })

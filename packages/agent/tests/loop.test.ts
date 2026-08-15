@@ -16,17 +16,24 @@ import type { AgentLoop, AgentLoopConfig } from '@mini-dsh/agent'
 async function makeHarness(options: {
   replies?: Parameters<typeof createFakeLlm>[0]['replies']
   systemPrompt?: string
+  stream?: boolean
   events?: readonly SessionEvent[]
 } = {}) {
   const { ctx, dispose } = await createTestContext()
   const fake = createFakeLlm({ replies: options.replies ?? [] })
   await ctx.plugin(provideLlm, fake)
   await ctx.plugin(provideTools, createToolRegistry())
+  // 探针工具 echo：流式混合测试里给模型一个可用的真工具。
+  ctx.get('tools')!.register({
+    declaration: { name: 'echo', description: '回显文本', parameters: { type: 'object', properties: { text: { type: 'string' } } } },
+    execute: async (input: Record<string, unknown>) => ({ echoed: input.text }),
+  })
   const sessionConfig: SessionConfig = { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } }
   if (options.events !== undefined) sessionConfig.events = options.events
   const session = await openSession(ctx, sessionConfig)
   const loopConfig: AgentLoopConfig = {}
   if (options.systemPrompt !== undefined) loopConfig.systemPrompt = options.systemPrompt
+  if (options.stream !== undefined) loopConfig.stream = options.stream
   // ctx.plugin 给插件的是会话 ctx 的子 ctx（自己的 fiber 作用域）；loop 句柄挂在该 ctx 上。
   const fiber = await session.ctx.plugin(agentLoop, loopConfig)
   const loop: AgentLoop = fiber.ctx['agent-loop']
@@ -214,6 +221,111 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
         { content: 'B 的问题' },
         { content: '给 B' },
         { reason: 'done' },
+      ])
+    } finally {
+      await dispose()
+    }
+  })
+})
+
+describe('agentLoop 流式（M4）', () => {
+  it('stream 开启：assistant/stream 分片按顺序落日志，assistant 终事件为拼接全文', async () => {
+    const { session, loop, dispose } = await makeHarness({
+      replies: [{ chunks: ['你', '好', '呀'] }],
+      stream: true,
+    })
+    try {
+      await loop.chat('你好')
+      expect(session.log.map((e) => e.type)).toEqual([
+        'session/created',
+        'turn/start',
+        'user',
+        'assistant/stream',
+        'assistant/stream',
+        'assistant/stream',
+        'assistant',
+        'turn/end',
+      ])
+      expect(session.log.map((e) => e.payload)).toEqual([
+        { id: 's1', title: '', createdAt: 0 },
+        undefined,
+        { content: '你好' },
+        { content: '你' },
+        { content: '好' },
+        { content: '呀' },
+        { content: '你好呀' },
+        { reason: 'done' },
+      ])
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('stream 未开（默认）：无 assistant/stream 事件，chunks 台词静默拼全文（与 M2/M3 一致）', async () => {
+    const { session, loop, dispose } = await makeHarness({ replies: [{ chunks: ['你', '好'] }] })
+    try {
+      await loop.chat('你好')
+      expect(session.log.map((e) => e.type)).toEqual([
+        'session/created', 'turn/start', 'user', 'assistant', 'turn/end',
+      ])
+      expect(session.log[3]!.payload).toEqual({ content: '你好' })
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('stream 开启但实现无分片（非流式实现回退）：无 stream 事件，assistant 终事件一次性', async () => {
+    const { session, loop, dispose } = await makeHarness({
+      replies: [{ content: '普通回复' }],
+      stream: true,
+    })
+    try {
+      await loop.chat('在吗')
+      expect(session.log.map((e) => e.type)).toEqual([
+        'session/created', 'turn/start', 'user', 'assistant', 'turn/end',
+      ])
+      expect(session.log[3]!.payload).toEqual({ content: '普通回复' })
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('工具往返 + 流式最终回答混合：工具轮无分片，最终回复分片逐条落日志', async () => {
+    const { session, fake, loop, dispose } = await makeHarness({
+      replies: [
+        { toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }] },
+        { chunks: ['收到', '！'] },
+      ],
+      stream: true,
+    })
+    try {
+      await loop.chat('回显一下')
+      expect(session.log.map((e) => e.type)).toEqual([
+        'session/created',
+        'turn/start',
+        'user',
+        'assistant',
+        'tool',
+        'tool',
+        'assistant/stream',
+        'assistant/stream',
+        'assistant',
+        'turn/end',
+      ])
+      // 工具轮 assistant 载荷是"要工具"，不带分片；最终 assistant 是拼接全文
+      expect(session.log[3]!.payload).toEqual({
+        content: '',
+        toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }],
+      })
+      expect(session.log.at(-2)!.payload).toEqual({ content: '收到！' })
+      // 第二轮的模型输入：工具结果已回填 messages（M3 行为在流式下不变）
+      expect(fake.requests[1]!.messages.slice(-2)).toEqual([
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }],
+        },
+        { role: 'tool', toolCallId: 'c1', content: JSON.stringify({ echoed: '喂' }) },
       ])
     } finally {
       await dispose()

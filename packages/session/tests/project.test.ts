@@ -40,6 +40,20 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
     expect(projectMessages([])).toEqual([])
   })
 
+  it('assistant/stream 分片事件跳过（M4：模型输入用最终 assistant 全文，不用分片）', () => {
+    const events: SessionEvent[] = [
+      { seq: 2, type: 'user', ts: 1, payload: { content: '在吗' } },
+      { seq: 3, type: 'assistant/stream', ts: 2, payload: { content: '你' } },
+      { seq: 4, type: 'assistant/stream', ts: 3, payload: { content: '好' } },
+      { seq: 5, type: 'assistant', ts: 4, payload: { content: '你好' } },
+    ]
+
+    expect(projectMessages(events)).toEqual([
+      { role: 'user', content: '在吗' },
+      { role: 'assistant', content: '你好' },
+    ])
+  })
+
   it('assistant 带 toolCalls 时原样映射；tool 调用事件（无 output）跳过', () => {
     const events: SessionEvent[] = [
       { seq: 2, type: 'user', ts: 1, payload: { content: '读文件' } },

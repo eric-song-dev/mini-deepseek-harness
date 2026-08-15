@@ -11,14 +11,19 @@ describe('Session 事件词汇（M1 契约）', () => {
     try {
       ctx.emit('turn/start')
       ctx.emit('user', { content: '你好' })
+      ctx.emit('assistant/stream', { content: '你' })
+      ctx.emit('assistant/stream', { content: '好' })
       ctx.emit('assistant', { content: '你好呀' })
       ctx.emit('tool', { name: 'bash', input: { cmd: 'pwd' }, output: '/home' })
       ctx.emit('turn/end', { reason: 'done' })
 
       expect(recorder.events.map((event) => event.name)).toEqual([
-        'turn/start', 'user', 'assistant', 'tool', 'turn/end',
+        'turn/start', 'user', 'assistant/stream', 'assistant/stream', 'assistant', 'tool', 'turn/end',
       ])
       expect(recorder.eventsOf('user')[0]!.args[0]).toEqual({ content: '你好' })
+      expect(recorder.eventsOf('assistant/stream').map((event) => event.args[0])).toEqual([
+        { content: '你' }, { content: '好' },
+      ])
       expect(recorder.eventsOf('assistant')[0]!.args[0]).toEqual({ content: '你好呀' })
       expect(recorder.eventsOf('tool')[0]!.args[0]).toEqual({
         name: 'bash', input: { cmd: 'pwd' }, output: '/home',
@@ -31,13 +36,15 @@ describe('Session 事件词汇（M1 契约）', () => {
   })
 
   it('词汇表 SESSION_EVENT_NAMES 覆盖全部可 emit 的事件名', () => {
-    expect([...SESSION_EVENT_NAMES].sort()).toEqual(['assistant', 'tool', 'turn/end', 'turn/start', 'user'])
+    expect([...SESSION_EVENT_NAMES].sort()).toEqual([
+      'assistant', 'assistant/stream', 'tool', 'turn/end', 'turn/start', 'user',
+    ])
   })
 
   it('SessionEvent 形状固定为 seq/type/ts/payload（编译期断言）', () => {
     expectTypeOf<SessionEvent>().toMatchTypeOf<{ seq: number, type: string, ts: number, payload: unknown }>()
     expectTypeOf<SessionEvent['type']>().toMatchTypeOf<
-      'session/created' | 'turn/start' | 'turn/end' | 'user' | 'assistant' | 'tool'
+      'session/created' | 'turn/start' | 'turn/end' | 'user' | 'assistant' | 'assistant/stream' | 'tool'
     >()
   })
 
@@ -63,6 +70,7 @@ describe('Session 事件词汇（M1 契约）', () => {
     expectTypeOf<Parameters<Events['assistant']>>().toEqualTypeOf<
       [{ content: string, toolCalls?: readonly { id: string, name: string, arguments: Record<string, unknown> }[] }]
     >()
+    expectTypeOf<Parameters<Events['assistant/stream']>>().toEqualTypeOf<[{ content: string }]>()
     expectTypeOf<Parameters<Events['turn/end']>>().toEqualTypeOf<[{ reason: 'done' | 'user' | 'crash' | 'limit' }]>()
     expectTypeOf<Parameters<Events['tool']>>().toEqualTypeOf<
       [{ name: string, input: unknown, output?: unknown }]
