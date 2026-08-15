@@ -1,0 +1,23 @@
+{
+  "name": "mini-deepseek-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DeepSeek Harness 的教学迷你实现：CORDIS 内核 + 一切皆为插件 + 事件轨迹",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r run typecheck",
+    "demo:kernel": "tsx packages/kernel/examples/run-profile.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.10"
+  }
+}

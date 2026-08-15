@@ -1,0 +1,16 @@
+{
+  "name": "@mini-dsh/test-support",
+  "version": "0.1.0",
+  "description": "全项目测试的公共语言：测试 ctx、测试服务注入、事件断言",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cordis": "4.0.0-rc.8"
+  }
+}

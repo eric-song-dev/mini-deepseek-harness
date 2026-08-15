@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+
+# pnpm 11 的依赖构建批准：esbuild 需要下载平台二进制（vitest 依赖它）
+allowBuilds:
+  esbuild: true
