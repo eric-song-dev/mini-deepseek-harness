@@ -1,5 +1,5 @@
 import type { Context } from 'cordis'
-import type { ChatMessage, ChatOptions, ChatResult, LLM, ToolCall, ToolSpec } from './llm'
+import type { ChatMessage, ChatOptions, ChatResult, ChatUsage, LLM, ToolCall, ToolSpec } from './llm'
 
 /**
  * OpenAI 兼容 adapter：LLM seam 的第一个（也是生产环境唯一）实现。
@@ -83,25 +83,107 @@ function parseToolCalls(
     const id = typeof call.id === 'string' ? call.id : ''
     const name = typeof call.function?.name === 'string' ? call.function.name : ''
     if (name === '') continue
-    let args: Record<string, unknown> = {}
-    if (typeof call.function?.arguments === 'string' && call.function.arguments !== '') {
-      try {
-        const parsed: unknown = JSON.parse(call.function.arguments)
-        if (typeof parsed === 'object' && parsed !== null) args = parsed as Record<string, unknown>
-      } catch {
-        // 非法 JSON：回退空对象（模型输出不可控，别让一次坏参数打崩整个 loop）
-      }
-    }
-    calls.push({ id, name, arguments: args })
+    const rawArgs = typeof call.function?.arguments === 'string' ? call.function.arguments : ''
+    calls.push({ id, name, arguments: parseArguments(rawArgs) })
   }
   return calls
 }
 
+/** wire 的 arguments JSON 串 → 已解析对象；非法 JSON 回退空对象。 */
+function parseArguments(raw: string): Record<string, unknown> {
+  if (raw === '') return {}
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed === 'object' && parsed !== null) return parsed as Record<string, unknown>
+  } catch {
+    // 非法 JSON：回退空对象（模型输出不可控，别让一次坏参数打崩整个 loop）
+  }
+  return {}
+}
+
+/** SSE data 帧的最小形状（其余字段忽略）。 */
+interface OpenAiStreamChunk {
+  choices?: Array<{
+    delta?: {
+      content?: unknown
+      tool_calls?: Array<{ index?: number; id?: unknown; function?: { name?: unknown; arguments?: unknown } }>
+    }
+  }>
+  usage?: { prompt_tokens?: number; completion_tokens?: number }
+}
+
+/**
+ * 消费 SSE 流式响应（M4）：逐帧回调 onChunk、累积 content、按 index 累积 tool_call 增量、
+ * 收尾帧取 usage。分片可能跨网络包边界，按行缓冲再解析。
+ */
+async function consumeStream(response: Response, onChunk?: (chunk: string) => void): Promise<ChatResult> {
+  const reader = response.body?.getReader()
+  if (!reader) throw new Error('LLM 流式响应缺少 body')
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let content = ''
+  const toolCallParts = new Map<number, { id: string; name: string; arguments: string }>()
+  let usage: ChatUsage = { inputTokens: 0, outputTokens: 0 }
+
+  const processLine = (line: string): void => {
+    if (!line.startsWith('data:')) return
+    const data = line.slice(5).trim()
+    if (data === '' || data === '[DONE]') return
+    const chunk = JSON.parse(data) as OpenAiStreamChunk
+    const delta = chunk.choices?.[0]?.delta
+    if (typeof delta?.content === 'string') {
+      content += delta.content
+      onChunk?.(delta.content)
+    }
+    for (const call of delta?.tool_calls ?? []) {
+      const index = typeof call.index === 'number' ? call.index : 0
+      const part = toolCallParts.get(index) ?? { id: '', name: '', arguments: '' }
+      if (typeof call.id === 'string') part.id = call.id
+      if (typeof call.function?.name === 'string') part.name += call.function.name
+      if (typeof call.function?.arguments === 'string') part.arguments += call.function.arguments
+      toolCallParts.set(index, part)
+    }
+    if (chunk.usage) {
+      usage = {
+        inputTokens: chunk.usage.prompt_tokens ?? 0,
+        outputTokens: chunk.usage.completion_tokens ?? 0,
+      }
+    }
+  }
+
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let newline: number
+    while ((newline = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, newline).replace(/\r$/, '')
+      buffer = buffer.slice(newline + 1)
+      processLine(line)
+    }
+  }
+  buffer += decoder.decode()
+  if (buffer !== '') processLine(buffer)
+
+  const toolCalls = [...toolCallParts.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, part]) => ({ id: part.id, name: part.name, arguments: parseArguments(part.arguments) }))
+    .filter((call) => call.name !== '')
+
+  if (content === '' && toolCalls.length === 0) {
+    throw new Error('LLM 流式响应缺少 choices[0].delta.content（既无文本也无工具调用）')
+  }
+  const result: ChatResult = { content, usage }
+  if (toolCalls.length > 0) result.toolCalls = toolCalls
+  return result
+}
+
 /**
  * 创建 OpenAI 兼容 adapter（返回 LLM 抽象服务）。
- * 请求：POST `<baseUrl>/chat/completions`，body `{ model, messages, stream: false }`；
+ * 请求：POST `<baseUrl>/chat/completions`，body `{ model, messages, stream }`；
  * 响应：`choices[0].message.content` + usage 映射（prompt_tokens→inputTokens 等）。
- * M2 只消费非流式：`stream: false` 写死，`onChunk` 选项预留不调用（M4 接 UI）。
+ * 传 `onChunk`（M4 流式）时 `stream: true` + SSE 逐分片回调；不传时 `stream: false`
+ * 与 M2/M3 行为完全一致。
  */
 export function createOpenAiLlm(options: OpenAiLlmOptions = {}): LLM {
   const baseUrl = (options.baseUrl ?? 'https://api.deepseek.com').replace(/\/+$/, '')
@@ -113,17 +195,22 @@ export function createOpenAiLlm(options: OpenAiLlmOptions = {}): LLM {
     async chat(messages: readonly ChatMessage[], options?: ChatOptions) {
       const headers: Record<string, string> = { 'content-type': 'application/json' }
       if (apiKey) headers.authorization = `Bearer ${apiKey}`
-      const body: Record<string, unknown> = { model, messages: messages.map(toWireMessage), stream: false }
+      const onChunk = options?.onChunk
+      const stream = onChunk !== undefined
+      const body: Record<string, unknown> = { model, messages: messages.map(toWireMessage), stream }
+      if (stream) body.stream_options = { include_usage: true }
       if (options?.tools && options.tools.length > 0) body.tools = toWireTools(options.tools)
       const response = await fetchImpl(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
       })
-      const text = await response.text()
       if (!response.ok) {
+        const text = await response.text()
         throw new LlmHttpError(response.status, text.slice(0, 200))
       }
+      if (stream) return consumeStream(response, onChunk)
+      const text = await response.text()
       const data = JSON.parse(text) as OpenAiResponse
       const message = data.choices?.[0]?.message
       const content = typeof message?.content === 'string' ? message.content : ''

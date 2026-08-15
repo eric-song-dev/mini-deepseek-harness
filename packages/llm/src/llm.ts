@@ -52,8 +52,9 @@ export interface ChatResult {
 /** chat 的选项。 */
 export interface ChatOptions {
   /**
-   * 预留（M4 流式 UI）：增量文本回调。
-   * M2 的 loop 只消费非流式；M2 的 adapter 与假 LLM 均不调用它。
+   * 流式增量回调（M4 起被消费）：每收到一个文本分片回调一次。
+   * adapter 传入时切换 stream:true + SSE 逐帧解析；假 LLM 按 chunks 台词逐片回调。
+   * 不传 = 非流式，行为与 M2/M3 完全一致。
    */
   onChunk?: (chunk: string) => void
   /** 可用工具声明（M3 起 loop 从 tools seam 取声明列表传入）。 */

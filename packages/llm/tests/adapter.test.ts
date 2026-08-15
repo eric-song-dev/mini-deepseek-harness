@@ -248,19 +248,26 @@ describe('createOpenAiLlm（工具调用协议，M3）', () => {
 })
 
 describe('createOpenAiLlm（流式，M4）', () => {
-  function lastBody(http: FakeHttp): Record<string, unknown> {
-    return JSON.parse(http.calls.at(-1)!.init.body as string) as Record<string, unknown>
-  }
-
   it('传 onChunk 时请求 stream:true + stream_options.include_usage；不传时 stream:false 且无 stream_options', async () => {
-    const http = createFakeSseHttp(() => ({ frames: [sseChunk({ content: '好' })] }))
-    const llm = createOpenAiLlm({ fetch: http.fetch })
+    // 端点按请求体的 stream 字段切换响应：流式给 SSE 帧，非流式给 JSON（与真实 API 一致）
+    const sseHttp = createFakeSseHttp((url, init) => ({
+      frames: [sseChunk({ content: '好' })],
+    }))
+    const jsonHttp = createFakeHttp(() => ({ body: okCompletion }))
+    const routingFetch: typeof fetch = async (input, init) => {
+      const body = JSON.parse(String(init?.body)) as { stream?: boolean }
+      if (body.stream === true) return await sseHttp.fetch(input, init)
+      return await jsonHttp.fetch(input, init)
+    }
+    const llm = createOpenAiLlm({ fetch: routingFetch })
     await llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })
-    expect(lastBody(http).stream).toBe(true)
-    expect(lastBody(http).stream_options).toEqual({ include_usage: true })
+    const streamedBody = JSON.parse(sseHttp.calls.at(-1)!.init.body as string) as Record<string, unknown>
+    expect(streamedBody.stream).toBe(true)
+    expect(streamedBody.stream_options).toEqual({ include_usage: true })
     await llm.chat([{ role: 'user', content: 'x' }])
-    expect(lastBody(http).stream).toBe(false)
-    expect('stream_options' in lastBody(http)).toBe(false)
+    const plainBody = JSON.parse(jsonHttp.calls.at(-1)!.init.body as string) as Record<string, unknown>
+    expect(plainBody.stream).toBe(false)
+    expect('stream_options' in plainBody).toBe(false)
   })
 
   it('SSE data: 帧逐帧回调 onChunk（跳过注释/event/空行），content 为拼接全文，usage 取带 usage 的帧', async () => {
