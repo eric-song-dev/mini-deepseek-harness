@@ -1,5 +1,5 @@
 import type { Context } from 'cordis'
-import { clientShell, uiConversation, uiSessionList, uiTool } from '@mini-dsh/client'
+import { clientShell, uiConversation, uiSessionList, uiTool, uiTrajectory } from '@mini-dsh/client'
 import type { ClientBridge } from '@mini-dsh/client'
 
 /**
@@ -7,7 +7,7 @@ import type { ClientBridge } from '@mini-dsh/client'
  *
  * 与 host 侧的 profile 同构——"一切皆为插件"：apps/web 的 entry 壳只注入
  * 这一个插件（外加把窗口位置拼成桥地址），不包含任何业务逻辑。
- * 加面板（未来的 ui-trajectory 等）= 在列表里加一行，shell 与 entry 不改。
+ * 加面板（M5 的 ui-trajectory）= 在列表里加一行，shell 与 entry 不改。
  */
 export interface WebBundleConfig {
   /** 可注入的 client 连接（apps/web 用 wsClientBridge；测试用内存直连）。 */
@@ -20,6 +20,7 @@ export const webBundle = Object.assign(
     await ctx.plugin(uiSessionList)
     await ctx.plugin(uiConversation)
     await ctx.plugin(uiTool)
+    await ctx.plugin(uiTrajectory)
   },
   {},
 )
