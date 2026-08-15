@@ -1,4 +1,4 @@
 import './loop'
 
-export { agentLoop } from './loop'
+export { agentLoop, DEFAULT_MAX_STEPS, MaxStepsExceededError } from './loop'
 export type { AgentLoop, AgentLoopConfig } from './loop'

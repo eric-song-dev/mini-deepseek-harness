@@ -16,6 +16,7 @@ import { Context } from 'cordis'
 import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import type { Session, SessionEvent } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
+import { createToolRegistry, provideTools } from '@mini-dsh/tools'
 import { createFakeLlm } from '@mini-dsh/test-support'
 import { agentLoop } from '@mini-dsh/agent'
 import type { AgentLoop } from '@mini-dsh/agent'
@@ -40,6 +41,7 @@ async function boot(script: string[]) {
   await ctx.plugin(SessionManager)
   const fake = createFakeLlm({ replies: script.map((content) => ({ content })) })
   await ctx.plugin(provideLlm, fake)
+  await ctx.plugin(provideTools, createToolRegistry())
   return { ctx, manager: ctx.get('session-manager')!, fake, stop: () => ctx.fiber.dispose() }
 }
 
