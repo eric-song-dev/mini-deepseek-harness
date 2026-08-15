@@ -73,6 +73,9 @@ importers:
         specifier: 4.0.0-rc.8
         version: 4.0.0-rc.8
     devDependencies:
+      '@mini-dsh/skill':
+        specifier: workspace:*
+        version: link:../skill
       '@mini-dsh/test-support':
         specifier: workspace:*
         version: link:../test-support
