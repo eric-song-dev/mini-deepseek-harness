@@ -1,0 +1,129 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, isAbsolute, resolve } from 'node:path'
+import type { Context } from 'cordis'
+import type { Tool } from './tools'
+
+/**
+ * 文件工具：read / write / edit 三个独立工具（M3 spec 决策 6）。
+ *
+ * 教学要点：
+ * - 三个操作是**三个声明**：模型按名字选工具，声明（参数 schema）就是给模型的"说明书"。
+ * - 相对路径按会话 cwd 解析（cwd 随会话 meta 走，见 loop）；无沙箱（风险明示于 README）。
+ * - read/edit 对"文件不存在"是**报错**（rejection）：读不到就是读不到，模型需要失败原因；
+ *   write 会创建父目录（工具要能动手"建新东西"）。
+ */
+
+interface FsInput {
+  path: string
+}
+
+interface WriteInput extends FsInput {
+  content: string
+}
+
+interface EditInput extends FsInput {
+  oldText: string
+  newText: string
+}
+
+function resolvePath(cwd: string, path: string): string {
+  return isAbsolute(path) ? resolve(path) : resolve(cwd, path)
+}
+
+export function createReadFileTool(): Tool {
+  return {
+    declaration: {
+      name: 'read_file',
+      description: '读取一个文本文件的内容。',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: '文件路径（相对会话 cwd 或绝对路径）' },
+        },
+        required: ['path'],
+      },
+    },
+    async execute(input: Record<string, unknown>, ctx) {
+      const { path } = input as unknown as FsInput
+      return readFile(resolvePath(ctx.cwd, path), 'utf8')
+    },
+  }
+}
+
+export function createWriteFileTool(): Tool {
+  return {
+    declaration: {
+      name: 'write_file',
+      description: '写入文本文件（覆盖已有内容；父目录不存在会自动创建）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: '文件路径（相对会话 cwd 或绝对路径）' },
+          content: { type: 'string', description: '要写入的完整内容' },
+        },
+        required: ['path', 'content'],
+      },
+    },
+    async execute(input: Record<string, unknown>, ctx) {
+      const { path, content } = input as unknown as WriteInput
+      const target = resolvePath(ctx.cwd, path)
+      await mkdir(dirname(target), { recursive: true })
+      await writeFile(target, content, 'utf8')
+      return { path: target, bytes: Buffer.byteLength(content) }
+    },
+  }
+}
+
+export function createEditFileTool(): Tool {
+  return {
+    declaration: {
+      name: 'edit_file',
+      description: '把文件里唯一的一处旧文本精确替换为新文本（旧文本必须恰好出现一次）。',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: '文件路径（相对会话 cwd 或绝对路径）' },
+          oldText: { type: 'string', description: '要被替换的旧文本' },
+          newText: { type: 'string', description: '替换上去的新文本' },
+        },
+        required: ['path', 'oldText', 'newText'],
+      },
+    },
+    async execute(input: Record<string, unknown>, ctx) {
+      const { path, oldText, newText } = input as unknown as EditInput
+      const target = resolvePath(ctx.cwd, path)
+      const text = await readFile(target, 'utf8')
+      const occurrences = text.split(oldText).length - 1
+      if (occurrences === 0) throw new Error(`edit_file：文件里找不到旧文本（${target}）`)
+      if (occurrences > 1) {
+        throw new Error(`edit_file：旧文本出现 ${occurrences} 次，不是唯一（${target}）`)
+      }
+      await writeFile(target, text.replace(oldText, newText), 'utf8')
+      return { path: target, replaced: true }
+    },
+  }
+}
+
+/** read_file 工具插件。 */
+export const readFileTool = Object.assign(
+  function readFileTool(ctx: Context): void {
+    ctx.tools.register(createReadFileTool())
+  },
+  { inject: ['tools'] },
+)
+
+/** write_file 工具插件。 */
+export const writeFileTool = Object.assign(
+  function writeFileTool(ctx: Context): void {
+    ctx.tools.register(createWriteFileTool())
+  },
+  { inject: ['tools'] },
+)
+
+/** edit_file 工具插件。 */
+export const editFileTool = Object.assign(
+  function editFileTool(ctx: Context): void {
+    ctx.tools.register(createEditFileTool())
+  },
+  { inject: ['tools'] },
+)

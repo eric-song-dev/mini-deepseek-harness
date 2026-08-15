@@ -10,3 +10,13 @@ export type {
   ToolInvocation,
   ToolsService,
 } from './tools'
+export { bashTool, createBashTool } from './bash'
+export type { BashInput, BashOutput } from './bash'
+export {
+  createEditFileTool,
+  createReadFileTool,
+  createWriteFileTool,
+  editFileTool,
+  readFileTool,
+  writeFileTool,
+} from './fs'
