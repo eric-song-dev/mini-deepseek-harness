@@ -15,6 +15,8 @@ declare module 'cordis' {
     'user'(payload: UserEventPayload): void
     /** 助手回复。 */
     'assistant'(payload: AssistantEventPayload): void
+    /** 助手流式分片（M4）：assistant 终事件之前的增量文本；分片拼接 == assistant.content。 */
+    'assistant/stream'(payload: AssistantStreamPayload): void
     /** 工具调用（M3 起由工具执行管线落事件）。 */
     'tool'(payload: ToolEventPayload): void
   }
@@ -26,6 +28,11 @@ export interface TurnEndPayload {
 }
 
 export interface UserEventPayload {
+  content: string
+}
+
+/** 助手流式分片（M4）：一段增量文本。 */
+export interface AssistantStreamPayload {
   content: string
 }
 
@@ -55,6 +62,7 @@ export type SessionEventType =
   | 'turn/end'
   | 'user'
   | 'assistant'
+  | 'assistant/stream'
   | 'tool'
 
 /** 日志条目（append-only 日志的存储单元）。 */
@@ -70,7 +78,7 @@ export interface SessionEvent {
 }
 
 /** 可 emit 的词汇事件名：桥接监听器与测试都以这张表为真源。 */
-export const SESSION_EVENT_NAMES = ['turn/start', 'turn/end', 'user', 'assistant', 'tool'] as const
+export const SESSION_EVENT_NAMES = ['turn/start', 'turn/end', 'user', 'assistant', 'assistant/stream', 'tool'] as const
 
 /**
  * 每个会话 JSONL 的第一行：session/created 头记录。

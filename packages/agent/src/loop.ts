@@ -17,6 +17,11 @@ export interface AgentLoopConfig {
   systemPrompt?: string
   /** 工具循环步数上限；超限落 turn/end(reason:'limit') 并抛 MaxStepsExceededError。 */
   maxSteps?: number
+  /**
+   * 流式（M4）：开启后 llm.chat 传 onChunk，分片经 assistant/stream 事件落日志
+   * （桥再推给 client 增量渲染）。实现无分片（非流式）时自动回退：只有 assistant 终事件。
+   */
+  stream?: boolean
 }
 
 /** 工具循环达到步数上限（不静默空转：turn/end 已落 reason:'limit'，错误继续上抛）。 */
@@ -37,6 +42,8 @@ export class MaxStepsExceededError extends Error {
  *   turn/start → user →（日志投影 messages → llm.chat）→ assistant
  *   → [模型要工具：tool(调用) → tools.execute → tool(结果) → 再问模型]×n
  *   → assistant(最终) → turn/end(done)
+ * 流式（M4）：config.stream 开启时，llm.chat 期间分片以 assistant/stream 事件逐条落日志，
+ * assistant 终事件仍是拼接全文；无分片的实现自动回退为只落终事件。
  * 异常时：turn/end(reason:'crash') + 原错误向上抛；工具步数超限：turn/end(reason:'limit')
  * + MaxStepsExceededError 上抛。
  *
@@ -95,6 +102,13 @@ export const agentLoop = Object.assign(
         for (;;) {
           const messages = projectMessages(ctx['session-log'].events, projectOptions)
           const chatOptions: ChatOptions = { tools: tools.list() }
+          // 流式（M4）：把 llm 的分片桥接成 assistant/stream 事件（日志真源的延伸），
+          // 最终 assistant 事件仍是拼接全文。config.stream 关闭时行为与 M2/M3 完全一致。
+          if (config.stream === true) {
+            chatOptions.onChunk = (chunk) => {
+              ctx.emit('assistant/stream', { content: chunk })
+            }
+          }
           const result = await llm.chat(messages, chatOptions)
           const assistantPayload: AssistantEventPayload = { content: result.content }
           if (result.toolCalls !== undefined && result.toolCalls.length > 0) {
