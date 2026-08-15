@@ -88,16 +88,14 @@ export async function loadProfile(profilePath: string): Promise<LoadedProfile> {
         cause,
       })
     }
-    const plugin = (typeof mod.default === 'function' ? mod.default : mod.apply) as
-      | Plugin
-      | undefined
-    if (typeof plugin !== 'function') {
+    const plugin = extractPlugin(mod)
+    if (!plugin) {
       throw new LoadProfileError(
         `plugins 第 ${index + 1} 行（${entry.name}）没有导出插件（需要 default 或 apply）`,
       )
     }
     try {
-      await ctx.plugin(plugin as Plugin.Function, entry.options)
+      await ctx.plugin(plugin, entry.options)
     } catch (cause) {
       throw new LoadProfileError(`plugins 第 ${index + 1} 行（${entry.name}）装载失败`, { cause })
     }
@@ -106,6 +104,12 @@ export async function loadProfile(profilePath: string): Promise<LoadedProfile> {
     ctx,
     dispose: () => ctx.fiber.dispose(),
   }
+}
+
+/** 从插件模块里取 default 导出（或 apply 导出）作为插件函数。 */
+function extractPlugin(mod: Record<string, unknown>): Plugin.Function | undefined {
+  const candidate = typeof mod.default === 'function' ? mod.default : mod.apply
+  return typeof candidate === 'function' ? (candidate as Plugin.Function) : undefined
 }
 
 /** './x'、'../x'、绝对路径 → 相对 profile 目录解析；其余视为 npm 包名。 */
