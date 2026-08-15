@@ -28,4 +28,4 @@
 
 1. **照搬概念，不照搬代码**：原版规模远大于 mini，直接抄会失控；先读原版 README 的"Service / 配置 / 已知限制"章节，提取 seam 契约与命名，再在 mini 里写自己的实现。
 2. **一次只读一个文件**，读完立刻记录关键契约到本 M 的 notes；不要抓取整个仓库。
-3. 本地安装的 launcher 与上游源码可能版本不同步，冲突时以 GitHub master 为准（注意记录差异到 notes）。
+3. 本地安装的 launcher 与上游源码可能版本不同步，冲突时以 ../deepseek-harness-upstream 为准（注意记录差异到 notes）。
