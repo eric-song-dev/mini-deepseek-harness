@@ -35,12 +35,12 @@ describe('skill 工具（M5：模型按需取技能）', () => {
 
   it('action=list → { skills: 已注册技能名 }（按注册顺序）', async () => {
     const tool = createSkillTool(makeSkills())
-    await expect(tool.execute({ action: 'list' }, { cwd: '/' })).resolves.toEqual({ skills: ['tdd', 'notes'] })
+    expect(await tool.execute({ action: 'list' }, { cwd: '/' })).toEqual({ skills: ['tdd', 'notes'] })
   })
 
   it('action=get → { name, content } 技能全文', async () => {
     const tool = createSkillTool(makeSkills())
-    await expect(tool.execute({ action: 'get', name: 'tdd' }, { cwd: '/' })).resolves.toEqual({
+    expect(await tool.execute({ action: 'get', name: 'tdd' }, { cwd: '/' })).toEqual({
       name: 'tdd',
       content: '# TDD 纪律\n先写失败的测试。',
     })
@@ -73,7 +73,7 @@ describe('skill 工具（M5：模型按需取技能）', () => {
       const tool = ctx.get('tools')!.get('skill')
       expect(tool).toBeDefined()
       expect(ctx.get('tools')!.list().map((d) => d.name)).toEqual(['skill'])
-      await expect(tool!.execute({ action: 'get', name: 'notes' }, { cwd: '/' })).resolves.toEqual({
+      expect(await tool!.execute({ action: 'get', name: 'notes' }, { cwd: '/' })).toEqual({
         name: 'notes',
         content: '# notes 工作流',
       })

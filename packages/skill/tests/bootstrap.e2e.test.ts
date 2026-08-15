@@ -55,6 +55,8 @@ async function boot(replies: Parameters<typeof createFakeLlm>[0]['replies']): Pr
     dir,
     stop: async () => {
       client.close()
+      // 先显式关 webHost（含会话 flush 落盘），再卸载插件作用域——否则落盘会撞上测试目录清理
+      await ctx.get('web-host')!.close()
       await ctx.fiber.dispose()
     },
   }
