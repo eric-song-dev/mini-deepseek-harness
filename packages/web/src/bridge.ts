@@ -61,6 +61,11 @@ export function createRpcBridge(): RpcBridge {
       return
     }
     const raw = message as { kind?: unknown; requestId?: unknown; method?: unknown; params?: unknown }
+    if (raw.kind === 'bad-message') {
+      // 传输层解析失败的标记消息（ws-server.ts 的 JSON.parse 失败路径）
+      respond(conn, bad('unknown', 'BadRequestError', '消息无法解析'))
+      return
+    }
     if (raw.kind !== 'request') {
       respond(conn, bad('unknown', 'BadRequestError', `未知消息类型：${String(raw.kind)}`))
       return
