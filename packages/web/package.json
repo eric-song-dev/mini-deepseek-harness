@@ -1,0 +1,24 @@
+{
+  "name": "@mini-dsh/web",
+  "version": "0.1.0",
+  "description": "host 服务：RpcBridge seam + HTTP/WS 桥 + SessionManager 门面（把会话能力暴露成远程操作）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/agent": "workspace:*",
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/tools": "workspace:*",
+    "cordis": "4.0.0-rc.8",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*",
+    "@types/ws": "^8.5.10"
+  }
+}
