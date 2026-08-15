@@ -66,6 +66,17 @@ pnpm demo:agent --clean    # M2 台词本三幕：聊一轮 → 同进程第二�
 pnpm demo:tools --clean    # M3 台词本驱动真工具：读文件 → 改文件 → 总结（事件日志全量可见）
 ```
 
+## 真 API 冒烟（唯一需要 key 的命令）
+
+```bash
+# key 放项目根 .env（gitignored）：DEEPSEEK_API_KEY=sk-...，或 export 环境变量
+pnpm demo:real --ask "用一句话介绍你自己"   # 真 DeepSeek API：adapter + loop + 工具全链路
+```
+
+`examples/real-chat.ts` 走与测试/演示完全相同的装配链，只是把假 LLM 换成 `openAiLlm`
+（换 provider = 换插件）。模型可经 `DEEPSEEK_MODEL` / `DEEPSEEK_BASE_URL` 覆盖
+（Ollama/vLLM 等兼容端点同样可用）。
+
 ## 测试
 
 | 文件 | 内容 |

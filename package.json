@@ -15,7 +15,8 @@
     "demo:kernel": "tsx packages/kernel/examples/run-profile.ts",
     "demo:session": "tsx packages/session/examples/roundtrip.ts",
     "demo:agent": "tsx packages/agent/examples/chat-demo.ts",
-    "demo:tools": "tsx packages/agent/examples/tools-demo.ts"
+    "demo:tools": "tsx packages/agent/examples/tools-demo.ts",
+    "demo:real": "tsx packages/agent/examples/real-chat.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

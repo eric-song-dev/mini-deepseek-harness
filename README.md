@@ -14,6 +14,8 @@ pnpm demo:kernel packages/kernel/examples/hello-profile/profile.yml  # M0 demo�
 pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 API key）
 pnpm demo:agent    # M2 demo：agent loop 三幕（零 API key）
 pnpm demo:tools --clean  # M3 demo：假 LLM 台词本驱动真工具（读→改→总结，零 API key）
+# 真 API 冒烟（唯一需要 key 的命令；key 放 .env 或环境变量 DEEPSEEK_API_KEY，其余全部零 key）：
+pnpm demo:real --ask "用一句话介绍你自己"
 ```
 
 ## 包布局（monorepo）

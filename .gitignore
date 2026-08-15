@@ -6,5 +6,9 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 
+# 密钥（DeepSeek API key 等；demo:real 会读它，绝不入库）
+.env
+.env.*
+
 # 运行时数据（session JSONL 日志等）
 .mini-dsh/
