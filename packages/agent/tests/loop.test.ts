@@ -2,30 +2,31 @@ import { describe, expect, it } from 'vitest'
 import { createFakeLlm, createTestContext } from '@mini-dsh/test-support'
 import type { FakeLlm } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
-import type { SessionEvent } from '@mini-dsh/session'
+import type { SessionConfig, SessionEvent } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
 import { agentLoop } from '@mini-dsh/agent'
-import type { AgentLoop } from '@mini-dsh/agent'
+import type { AgentLoop, AgentLoopConfig } from '@mini-dsh/agent'
 
 /**
  * 组装最小 harness：根 ctx 提供假 LLM（provideLlm 插件）→ openSession → 会话 ctx 装 agentLoop。
  * "换 provider = 换插件"：所有测试与 demo 都走这条真实注入链。
  */
 async function makeHarness(options: {
-  replies?: ConstructorParameters<typeof createFakeLlm>[0]['replies']
+  replies?: Parameters<typeof createFakeLlm>[0]['replies']
   systemPrompt?: string
   events?: readonly SessionEvent[]
 } = {}) {
   const { ctx, dispose } = await createTestContext()
   const fake = createFakeLlm({ replies: options.replies ?? [] })
   await ctx.plugin(provideLlm, fake)
-  const session = await openSession(ctx, {
-    id: 's1',
-    meta: { id: 's1', title: '', createdAt: 0 },
-    events: options.events,
-  })
-  session.ctx.plugin(agentLoop, { systemPrompt: options.systemPrompt })
-  const loop: AgentLoop = session.ctx['agent-loop']
+  const sessionConfig: SessionConfig = { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } }
+  if (options.events !== undefined) sessionConfig.events = options.events
+  const session = await openSession(ctx, sessionConfig)
+  const loopConfig: AgentLoopConfig = {}
+  if (options.systemPrompt !== undefined) loopConfig.systemPrompt = options.systemPrompt
+  // ctx.plugin 给插件的是会话 ctx 的子 ctx（自己的 fiber 作用域）；loop 句柄挂在该 ctx 上。
+  const fiber = await session.ctx.plugin(agentLoop, loopConfig)
+  const loop: AgentLoop = fiber.ctx['agent-loop']
   return { ctx, session, fake, loop, dispose }
 }
 
@@ -189,10 +190,10 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
     const a = await openSession(ctx, { id: 'a', meta: { id: 'a', title: '', createdAt: 0 } })
     const b = await openSession(ctx, { id: 'b', meta: { id: 'b', title: '', createdAt: 0 } })
     try {
-      a.ctx.plugin(agentLoop)
-      b.ctx.plugin(agentLoop)
-      const loopA: AgentLoop = a.ctx['agent-loop']
-      const loopB: AgentLoop = b.ctx['agent-loop']
+      const fiberA = await a.ctx.plugin(agentLoop)
+      const fiberB = await b.ctx.plugin(agentLoop)
+      const loopA: AgentLoop = fiberA.ctx['agent-loop']
+      const loopB: AgentLoop = fiberB.ctx['agent-loop']
       expect(loopA).not.toBe(loopB)
       await loopA.chat('A 的问题')
       await loopB.chat('B 的问题')
