@@ -8,10 +8,31 @@ import 'cordis'
  * 换 provider = 换提供 `llm` 服务的插件，loop 一行不改。
  */
 
+/** 一次工具调用（模型"要工具"时的输出）。 */
+export interface ToolCall {
+  /** 调用 id：结果消息用它回填到具体调用（OpenAI 协议的 tool_call_id）。 */
+  id: string
+  name: string
+  /** 已解析的参数对象；adapter 负责 wire 格式的 JSON 串 ↔ 对象的转换。 */
+  arguments: Record<string, unknown>
+}
+
+/** 工具声明（模型可读的"我能干什么"；与 tools 包 ToolDeclaration 结构相同）。 */
+export interface ToolSpec {
+  name: string
+  description: string
+  /** 参数 JSON Schema（OpenAI 兼容 function 协议原生格式）。 */
+  parameters: Record<string, unknown>
+}
+
 /** 一条模型消息。 */
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
+  role: 'system' | 'user' | 'assistant' | 'tool'
   content: string
+  /** assistant 消息里的工具调用（模型要工具时的输出）。 */
+  toolCalls?: readonly ToolCall[]
+  /** tool 消息归属的工具调用 id（结果回填给哪个调用）。 */
+  toolCallId?: string
 }
 
 /** 单次调用的 token 用量。 */
@@ -24,6 +45,8 @@ export interface ChatUsage {
 export interface ChatResult {
   content: string
   usage: ChatUsage
+  /** 模型请求的工具调用；纯文本回复时为 undefined。 */
+  toolCalls?: readonly ToolCall[]
 }
 
 /** chat 的选项。 */
@@ -33,6 +56,8 @@ export interface ChatOptions {
    * M2 的 loop 只消费非流式；M2 的 adapter 与假 LLM 均不调用它。
    */
   onChunk?: (chunk: string) => void
+  /** 可用工具声明（M3 起 loop 从 tools seam 取声明列表传入）。 */
+  tools?: readonly ToolSpec[]
 }
 
 /** LLM 抽象服务。 */

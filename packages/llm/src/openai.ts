@@ -1,5 +1,5 @@
 import type { Context } from 'cordis'
-import type { ChatMessage, LLM } from './llm'
+import type { ChatMessage, ChatOptions, ChatResult, LLM, ToolCall, ToolSpec } from './llm'
 
 /**
  * OpenAI 兼容 adapter：LLM seam 的第一个（也是生产环境唯一）实现。
@@ -34,8 +34,67 @@ export class LlmHttpError extends Error {
 
 /** OpenAI 兼容响应的最小形状（其余字段忽略）。 */
 interface OpenAiResponse {
-  choices?: Array<{ message?: { content?: unknown } }>
+  choices?: Array<{
+    message?: {
+      content?: unknown
+      tool_calls?: Array<{ id?: unknown; function?: { name?: unknown; arguments?: unknown } }>
+    }
+  }>
   usage?: { prompt_tokens?: number; completion_tokens?: number }
+}
+
+/** wire 格式的消息（请求体里的形状；role:tool 的结果消息走 tool_call_id）。 */
+type WireMessage =
+  | { role: 'system' | 'user' | 'assistant'; content: string }
+  | { role: 'assistant'; content: string; tool_calls: WireToolCall[] }
+  | { role: 'tool'; tool_call_id: string; content: string }
+
+interface WireToolCall {
+  id: string
+  type: 'function'
+  function: { name: string; arguments: string }
+}
+
+/** seam 消息 → wire 消息（协议细节只存在于 adapter：arguments 对象 ↔ JSON 串）。 */
+function toWireMessage(message: ChatMessage): WireMessage {
+  if (message.role === 'tool') {
+    return { role: 'tool', tool_call_id: message.toolCallId ?? '', content: message.content }
+  }
+  if (message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0) {
+    return {
+      role: 'assistant',
+      content: message.content,
+      tool_calls: message.toolCalls.map((call) => ({
+        id: call.id,
+        type: 'function',
+        function: { name: call.name, arguments: JSON.stringify(call.arguments) },
+      })),
+    }
+  }
+  return { role: message.role, content: message.content }
+}
+
+/** wire tool_calls → seam ToolCall；arguments 是 JSON 串，非法时回退空对象。 */
+function parseToolCalls(
+  raw: Array<{ id?: unknown; function?: { name?: unknown; arguments?: unknown } }>,
+): ToolCall[] {
+  const calls: ToolCall[] = []
+  for (const call of raw) {
+    const id = typeof call.id === 'string' ? call.id : ''
+    const name = typeof call.function?.name === 'string' ? call.function.name : ''
+    if (name === '') continue
+    let args: Record<string, unknown> = {}
+    if (typeof call.function?.arguments === 'string' && call.function.arguments !== '') {
+      try {
+        const parsed: unknown = JSON.parse(call.function.arguments)
+        if (typeof parsed === 'object' && parsed !== null) args = parsed as Record<string, unknown>
+      } catch {
+        // 非法 JSON：回退空对象（模型输出不可控，别让一次坏参数打崩整个 loop）
+      }
+    }
+    calls.push({ id, name, arguments: args })
+  }
+  return calls
 }
 
 /**
@@ -51,32 +110,47 @@ export function createOpenAiLlm(options: OpenAiLlmOptions = {}): LLM {
   const fetchImpl = options.fetch ?? fetch
 
   return {
-    async chat(messages: readonly ChatMessage[]) {
+    async chat(messages: readonly ChatMessage[], options?: ChatOptions) {
       const headers: Record<string, string> = { 'content-type': 'application/json' }
       if (apiKey) headers.authorization = `Bearer ${apiKey}`
+      const body: Record<string, unknown> = { model, messages: messages.map(toWireMessage), stream: false }
+      if (options?.tools && options.tools.length > 0) body.tools = toWireTools(options.tools)
       const response = await fetchImpl(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages, stream: false }),
+        body: JSON.stringify(body),
       })
       const text = await response.text()
       if (!response.ok) {
         throw new LlmHttpError(response.status, text.slice(0, 200))
       }
       const data = JSON.parse(text) as OpenAiResponse
-      const content = data.choices?.[0]?.message?.content
-      if (typeof content !== 'string') {
+      const message = data.choices?.[0]?.message
+      const content = typeof message?.content === 'string' ? message.content : ''
+      const toolCalls = message?.tool_calls ? parseToolCalls(message.tool_calls) : undefined
+      // 纯文本回复要有 content；工具调用回复 content 可为 null（置空串即可）。
+      if (content === '' && (toolCalls === undefined || toolCalls.length === 0)) {
         throw new Error(`LLM 响应缺少 choices[0].message.content：${text.slice(0, 200)}`)
       }
-      return {
+      const result: ChatResult = {
         content,
         usage: {
           inputTokens: data.usage?.prompt_tokens ?? 0,
           outputTokens: data.usage?.completion_tokens ?? 0,
         },
       }
+      if (toolCalls !== undefined && toolCalls.length > 0) result.toolCalls = toolCalls
+      return result
     },
   }
+}
+
+/** seam 工具声明 → wire 的 tools 字段（type:function 包裹）。 */
+function toWireTools(tools: readonly ToolSpec[]): unknown[] {
+  return tools.map((tool) => ({
+    type: 'function',
+    function: { name: tool.name, description: tool.description, parameters: tool.parameters },
+  }))
 }
 
 /**
