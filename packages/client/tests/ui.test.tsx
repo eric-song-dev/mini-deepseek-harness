@@ -45,10 +45,11 @@ function textOf(selector: string): string {
   return document.querySelector(selector)?.textContent ?? ''
 }
 
-/** 组装真 host（内存桥）+ client UI（jsdom）。 */
+/** 组装真 host（内存桥）+ client UI（jsdom）；extraPlugins 在渲染前追加注册（Slot 练习用）。 */
 async function makeUi(options: {
   replies: Parameters<typeof createFakeLlm>[0]['replies']
   chunkDelay?: number
+  extraPlugins?: Array<(ctx: Context) => void>
 }) {
   const { ctx, dispose } = await createTestContext()
   const dir = await mkdtemp(join(tmpdir(), 'mini-dsh-client-ui-'))
@@ -77,6 +78,7 @@ async function makeUi(options: {
   await clientCtx.plugin(uiSessionList)
   await clientCtx.plugin(uiConversation)
   await clientCtx.plugin(uiTool)
+  for (const plugin of options.extraPlugins ?? []) await clientCtx.plugin(plugin)
 
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -111,6 +113,18 @@ describe('client UI 装配（jsdom，M4）', () => {
     expect(document.querySelector('.dsh-area-list .dsh-new-session')).not.toBeNull()
     expect(textOf('.dsh-area-chat .dsh-empty')).toContain('新建或选择一个会话')
     expect(textOf('.dsh-area-tools .dsh-tool-empty')).toContain('还没有工具活动')
+  })
+
+  it('未列入主布局的 slot 也会被装配进 extras 区：加 ui 插件不改 shell', async () => {
+    const ExtraPanel = () => <div className="my-extra">我是额外面板</div>
+    const myExtraPlugin = Object.assign(
+      function myExtraPlugin(ctx: Context): void {
+        ctx['slot-registry'].register('my-panel', ExtraPanel)
+      },
+      { inject: ['slot-registry'] },
+    )
+    await makeUi({ replies: [{ content: '你好' }], extraPlugins: [myExtraPlugin] })
+    expect(textOf('.dsh-extras .dsh-extra .my-extra')).toBe('我是额外面板')
   })
 
   it('完整对话流：新建会话 → 发消息 → 流式分片打字机 → 气泡封印 → tool 卡片出现', async () => {

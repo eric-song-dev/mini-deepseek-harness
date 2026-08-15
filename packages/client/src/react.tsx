@@ -23,9 +23,12 @@ export function useSlotStore(): ClientSessionStore {
 }
 
 /**
- * 单页装配：三个已知 slot 区域（会话列表 / 对话 / 工具）。
- * 未注册的 slot 区域留空——加一个 ui-* 插件就是加一个面板，shell 不改。
+ * 单页装配：三个主区域（会话列表 / 对话 / 工具）按固定布局，
+ * 其余已注册 slot 依次进 extras 区——加一个 ui-* 插件 = 多一个面板，
+ * shell 与 entry 一行不改（"未来任意 ui-* 插件都从 Slot 挂进来"）。
  */
+const PRIMARY_SLOTS = ['session-list', 'conversation', 'tool']
+
 export function ClientRoot(props: { ctx: Context }): ReactElement {
   const registry = props.ctx.get('slot-registry')
   const store = props.ctx.get('client-session-store')
@@ -36,12 +39,22 @@ export function ClientRoot(props: { ctx: Context }): ReactElement {
     const Component = entry as ComponentType
     return <Component />
   }
+  const extras = registry.slots().filter((slot) => !PRIMARY_SLOTS.includes(slot))
   return (
     <SlotContext.Provider value={store}>
       <div className="dsh-shell">
         <aside className="dsh-area dsh-area-list">{renderSlot('session-list')}</aside>
         <main className="dsh-area dsh-area-chat">{renderSlot('conversation')}</main>
         <aside className="dsh-area dsh-area-tools">{renderSlot('tool')}</aside>
+        {extras.length > 0 && (
+          <div className="dsh-extras">
+            {extras.map((slot) => (
+              <section key={slot} className="dsh-extra">
+                {renderSlot(slot)}
+              </section>
+            ))}
+          </div>
+        )}
       </div>
     </SlotContext.Provider>
   )

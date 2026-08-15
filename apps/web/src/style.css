@@ -26,7 +26,26 @@ body {
 .dsh-shell {
   display: grid;
   grid-template-columns: 260px 1fr 320px;
+  grid-template-rows: 1fr auto;
   height: 100vh;
+}
+
+/* 主布局之外的 slot 装配区：加 ui 插件 = 这里多一个面板，shell 不改 */
+.dsh-extras {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  overflow-x: auto;
+}
+
+.dsh-extra {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .dsh-area {
