@@ -7,4 +7,5 @@ runLlmContract({
   make: () => createFakeLlm({ replies: [{ content: '契约回复' }] }),
   makeFailing: () => createFakeLlm({ replies: [] }),
   lastMessages: (llm) => (llm as FakeLlm).requests.at(-1)?.messages,
+  lastTools: (llm) => (llm as FakeLlm).requests.at(-1)?.tools,
 })

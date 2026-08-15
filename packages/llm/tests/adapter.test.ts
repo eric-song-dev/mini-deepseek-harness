@@ -107,6 +107,96 @@ describe('OpenAI 兼容 adapter 通过 LLM seam 契约', () => {
     makeFailing: () =>
       createOpenAiLlm({ fetch: createFakeHttp(() => ({ status: 500, body: {} })).fetch }),
     lastMessages: () => lastRequestMessages(http),
+    lastTools: () => {
+      const call = http.calls.at(-1)
+      if (!call) return undefined
+      const body = JSON.parse(call.init.body as string) as {
+        tools?: Array<{ function: { name: string; description: string; parameters: Record<string, unknown> } }>
+      }
+      return body.tools?.map((tool) => tool.function)
+    },
+  })
+})
+
+describe('createOpenAiLlm（工具调用协议，M3）', () => {
+  const tools = [
+    { name: 'read_file', description: '读文件', parameters: { type: 'object', properties: { path: { type: 'string' } } } },
+  ]
+
+  function lastBody(http: FakeHttp): Record<string, unknown> {
+    return JSON.parse(http.calls.at(-1)!.init.body as string) as Record<string, unknown>
+  }
+
+  it('请求带 tools 声明：type:function 包裹，name/description/parameters 透传；未传 tools 时无该字段', async () => {
+    const http = createFakeHttp(() => ({ body: okCompletion }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    await llm.chat([{ role: 'user', content: 'x' }], { tools })
+    expect(lastBody(http).tools).toEqual([
+      { type: 'function', function: { name: 'read_file', description: '读文件', parameters: { type: 'object', properties: { path: { type: 'string' } } } } },
+    ])
+    await llm.chat([{ role: 'user', content: 'x' }])
+    expect('tools' in lastBody(http)).toBe(false)
+  })
+
+  it('assistant 的 toolCalls 序列化为 tool_calls（arguments 转 JSON 串）；tool 消息序列化为 role:tool + tool_call_id', async () => {
+    const http = createFakeHttp(() => ({ body: okCompletion }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    const messages: ChatMessage[] = [
+      { role: 'user', content: '读文件' },
+      { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+      { role: 'tool', toolCallId: 'c1', content: JSON.stringify({ content: '文件内容' }) },
+    ]
+    await llm.chat(messages)
+    expect((lastBody(http).messages as unknown[]).slice(1)).toEqual([
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'c1', type: 'function', function: { name: 'read_file', arguments: '{"path":"a.txt"}' } }],
+      },
+      { role: 'tool', tool_call_id: 'c1', content: '{"content":"文件内容"}' },
+    ])
+  })
+
+  it('响应 tool_calls 解析为结构化 ToolCall（arguments JSON.parse 成对象）；非法 JSON 回退空对象', async () => {
+    const http = createFakeHttp(() => ({
+      body: {
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                { id: 'c9', type: 'function', function: { name: 'bash', arguments: '{"command":"ls"}' } },
+                { id: 'c8', type: 'function', function: { name: 'bash', arguments: 'not-json' } },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 5, completion_tokens: 3 },
+      },
+    }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    const result = await llm.chat([{ role: 'user', content: 'x' }])
+    expect(result).toEqual({
+      content: '',
+      usage: { inputTokens: 5, outputTokens: 3 },
+      toolCalls: [
+        { id: 'c9', name: 'bash', arguments: { command: 'ls' } },
+        { id: 'c8', name: 'bash', arguments: {} },
+      ],
+    })
+  })
+
+  it('只有 tool_calls、content 为 null 的响应视为合法（content 置空串，不报缺 content 错）', async () => {
+    const http = createFakeHttp(() => ({
+      body: {
+        choices: [{ message: { content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'bash', arguments: '{}' } }] } }],
+      },
+    }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    await expect(llm.chat([{ role: 'user', content: 'x' }])).resolves.toMatchObject({
+      content: '',
+      toolCalls: [{ id: 'c1', name: 'bash', arguments: {} }],
+    })
   })
 })
 
