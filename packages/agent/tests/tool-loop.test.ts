@@ -84,6 +84,7 @@ describe('agentLoop 工具调用循环（M3）', () => {
       expect(session.log[3]!.payload).toEqual({
         content: '',
         toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }],
+        usage: { inputTokens: 1, outputTokens: 1 },
       })
       expect(session.log[4]!.payload).toEqual({ name: 'read', input: { path: 'a.txt' } })
       expect(session.log[5]!.payload).toEqual({ name: 'read', input: { path: 'a.txt' }, output: { content: '文件内容' } })
@@ -92,7 +93,7 @@ describe('agentLoop 工具调用循环（M3）', () => {
         input: { path: 'a.txt' },
         output: { replaced: true },
       })
-      expect(session.log[9]!.payload).toEqual({ content: '已更新。' })
+      expect(session.log[9]!.payload).toEqual({ content: '已更新。', usage: { inputTokens: 1, outputTokens: 1 } })
       expect(session.log[10]!.payload).toEqual({ reason: 'done' })
     } finally {
       await dispose()
@@ -220,7 +221,7 @@ describe('agentLoop 工具调用循环（M3）', () => {
         'turn/end',
       ])
       expect(fake.requests[0]!.tools).toEqual([])
-      expect(session.log[3]!.payload).toEqual({ content: '你好呀！' })
+      expect(session.log[3]!.payload).toEqual({ content: '你好呀！', usage: { inputTokens: 1, outputTokens: 1 } })
     } finally {
       await dispose()
     }

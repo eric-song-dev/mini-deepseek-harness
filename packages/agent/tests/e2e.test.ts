@@ -71,7 +71,7 @@ describe('端到端：聊一轮 → 重启 → resume 继续（M2）', () => {
       'turn/end',
     ])
     expect(session2.log[2]!.payload).toEqual({ content: '第一轮问题' })
-    expect(session2.log[3]!.payload).toEqual({ content: '第一轮回复' })
+    expect(session2.log[3]!.payload).toEqual({ content: '第一轮回复', usage: { inputTokens: 1, outputTokens: 1 } })
     expect(session2.log[4]!.payload).toEqual({ reason: 'done' })
 
     // loop 可继续：新进程的模型看到全量历史（system + 第一轮问答 + 新问题）

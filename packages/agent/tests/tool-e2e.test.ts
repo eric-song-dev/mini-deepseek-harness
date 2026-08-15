@@ -96,7 +96,7 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
       input: { path: 'a.txt', oldText: '旧', newText: '新' },
       output: { path: resolve(workspace, 'a.txt'), replaced: true },
     })
-    expect(session.log[9]!.payload).toEqual({ content: '文件已更新。' })
+    expect(session.log[9]!.payload).toEqual({ content: '文件已更新。', usage: { inputTokens: 1, outputTokens: 1 } })
     expect(session.log[10]!.payload).toEqual({ reason: 'done' })
 
     // 模型第二步看到的 messages 含第一步的真实工具结果（role:tool 回填）
@@ -128,7 +128,7 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
       input: { command: 'echo hi; echo boom 1>&2; exit 3' },
       output: { stdout: 'hi\n', stderr: 'boom\n', exitCode: 3 },
     })
-    expect(session.log[6]!.payload).toEqual({ content: '命令跑完了（退出码 3）。' })
+    expect(session.log[6]!.payload).toEqual({ content: '命令跑完了（退出码 3）。', usage: { inputTokens: 1, outputTokens: 1 } })
     await runtime.stop()
   })
 

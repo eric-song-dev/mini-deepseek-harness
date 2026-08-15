@@ -120,12 +120,13 @@ describe('M4 端到端：真 host + 脚本化 WS 客户端', () => {
       expect(events[2]!.event.payload).toEqual({
         content: '',
         toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }],
+        usage: { inputTokens: 1, outputTokens: 1 },
       })
       expect(events[3]!.event.payload).toEqual({ name: 'echo', input: { text: '喂' } })
       expect(events[4]!.event.payload).toEqual({ name: 'echo', input: { text: '喂' }, output: { echoed: '喂' } })
       expect(events[5]!.event.payload).toEqual({ content: '收到' })
       expect(events[6]!.event.payload).toEqual({ content: '！' })
-      expect(events[7]!.event.payload).toEqual({ content: '收到！' })
+      expect(events[7]!.event.payload).toEqual({ content: '收到！', usage: { inputTokens: 1, outputTokens: 1 } })
 
       // —— 断线重连：resume 返回完整历史（含头记录与刚才那一轮）—— 
       client.close()

@@ -35,6 +35,22 @@ describe('Session 事件词汇（M1 契约）', () => {
     }
   })
 
+  it('assistant 载荷可带 usage（M5：token 用量落日志；旧日志无此字段仍合法）', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const recorder = createEventRecorder(ctx, ['assistant'])
+    try {
+      ctx.emit('assistant', { content: '你好', usage: { inputTokens: 12, outputTokens: 3 } })
+      // 无 usage 的旧载荷（M2–M4 日志）依旧合法
+      ctx.emit('assistant', { content: '旧日志回复' })
+      expect(recorder.eventsOf('assistant').map((event) => event.args[0])).toEqual([
+        { content: '你好', usage: { inputTokens: 12, outputTokens: 3 } },
+        { content: '旧日志回复' },
+      ])
+    } finally {
+      await dispose()
+    }
+  })
+
   it('词汇表 SESSION_EVENT_NAMES 覆盖全部可 emit 的事件名', () => {
     expect([...SESSION_EVENT_NAMES].sort()).toEqual([
       'assistant', 'assistant/stream', 'tool', 'turn/end', 'turn/start', 'user',
@@ -68,7 +84,11 @@ describe('Session 事件词汇（M1 契约）', () => {
   it('词汇载荷类型随事件名收窄（编译期断言）', async () => {
     expectTypeOf<Parameters<Events['user']>>().toEqualTypeOf<[{ content: string }]>()
     expectTypeOf<Parameters<Events['assistant']>>().toEqualTypeOf<
-      [{ content: string, toolCalls?: readonly { id: string, name: string, arguments: Record<string, unknown> }[] }]
+      [{
+        content: string
+        toolCalls?: readonly { id: string, name: string, arguments: Record<string, unknown> }[]
+        usage?: { inputTokens: number, outputTokens: number }
+      }]
     >()
     expectTypeOf<Parameters<Events['assistant/stream']>>().toEqualTypeOf<[{ content: string }]>()
     expectTypeOf<Parameters<Events['turn/end']>>().toEqualTypeOf<[{ reason: 'done' | 'user' | 'crash' | 'limit' }]>()

@@ -54,9 +54,24 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
         'turn/end',
       ])
       expect(session.log[2]!.payload).toEqual({ content: '你好' })
-      expect(session.log[3]!.payload).toEqual({ content: '你好呀！' })
+      expect(session.log[3]!.payload).toEqual({ content: '你好呀！', usage: { inputTokens: 1, outputTokens: 1 } })
       expect(session.log[4]!.payload).toEqual({ reason: 'done' })
       expect(fake.remaining).toBe(0)
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('assistant 事件携带 llm 返回的 usage（M5：token 用量落日志，非流式）', async () => {
+    const { session, loop, dispose } = await makeHarness({
+      replies: [{ content: '非流式回复', usage: { inputTokens: 7, outputTokens: 9 } }],
+    })
+    try {
+      await loop.chat('在吗')
+      expect(session.log[3]!.payload).toEqual({
+        content: '非流式回复',
+        usage: { inputTokens: 7, outputTokens: 9 },
+      })
     } finally {
       await dispose()
     }
@@ -159,9 +174,9 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
       const payloads = session.log.filter((e) => e.type === 'user' || e.type === 'assistant').map((e) => e.payload)
       expect(payloads).toEqual([
         { content: '一' },
-        { content: '慢回复 A' },
+        { content: '慢回复 A', usage: { inputTokens: 1, outputTokens: 1 } },
         { content: '二' },
-        { content: '快回复 B' },
+        { content: '快回复 B', usage: { inputTokens: 1, outputTokens: 1 } },
       ])
     } finally {
       await dispose()
@@ -212,14 +227,14 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
         { id: 'a', title: '', createdAt: 0 },
         undefined,
         { content: 'A 的问题' },
-        { content: '给 A' },
+        { content: '给 A', usage: { inputTokens: 1, outputTokens: 1 } },
         { reason: 'done' },
       ])
       expect(b.log.map((e) => e.payload)).toEqual([
         { id: 'b', title: '', createdAt: 0 },
         undefined,
         { content: 'B 的问题' },
-        { content: '给 B' },
+        { content: '给 B', usage: { inputTokens: 1, outputTokens: 1 } },
         { reason: 'done' },
       ])
     } finally {
@@ -253,9 +268,26 @@ describe('agentLoop 流式（M4）', () => {
         { content: '你' },
         { content: '好' },
         { content: '呀' },
-        { content: '你好呀' },
+        { content: '你好呀', usage: { inputTokens: 1, outputTokens: 1 } },
         { reason: 'done' },
       ])
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('流式：assistant 终事件同样携带 usage（分片事件不含 usage）', async () => {
+    const { session, loop, dispose } = await makeHarness({
+      replies: [{ chunks: ['甲', '乙'], usage: { inputTokens: 2, outputTokens: 3 } }],
+      stream: true,
+    })
+    try {
+      await loop.chat('讲')
+      expect(session.log.map((e) => e.type)).toEqual([
+        'session/created', 'turn/start', 'user', 'assistant/stream', 'assistant/stream', 'assistant', 'turn/end',
+      ])
+      expect(session.log[3]!.payload).toEqual({ content: '甲' })
+      expect(session.log.at(-2)!.payload).toEqual({ content: '甲乙', usage: { inputTokens: 2, outputTokens: 3 } })
     } finally {
       await dispose()
     }
@@ -268,7 +300,7 @@ describe('agentLoop 流式（M4）', () => {
       expect(session.log.map((e) => e.type)).toEqual([
         'session/created', 'turn/start', 'user', 'assistant', 'turn/end',
       ])
-      expect(session.log[3]!.payload).toEqual({ content: '你好' })
+      expect(session.log[3]!.payload).toEqual({ content: '你好', usage: { inputTokens: 1, outputTokens: 1 } })
     } finally {
       await dispose()
     }
@@ -284,7 +316,7 @@ describe('agentLoop 流式（M4）', () => {
       expect(session.log.map((e) => e.type)).toEqual([
         'session/created', 'turn/start', 'user', 'assistant', 'turn/end',
       ])
-      expect(session.log[3]!.payload).toEqual({ content: '普通回复' })
+      expect(session.log[3]!.payload).toEqual({ content: '普通回复', usage: { inputTokens: 1, outputTokens: 1 } })
     } finally {
       await dispose()
     }
@@ -316,8 +348,9 @@ describe('agentLoop 流式（M4）', () => {
       expect(session.log[3]!.payload).toEqual({
         content: '',
         toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }],
+        usage: { inputTokens: 1, outputTokens: 1 },
       })
-      expect(session.log.at(-2)!.payload).toEqual({ content: '收到！' })
+      expect(session.log.at(-2)!.payload).toEqual({ content: '收到！', usage: { inputTokens: 1, outputTokens: 1 } })
       // 第二轮的模型输入：工具结果已回填 messages（M3 行为在流式下不变）
       expect(fake.requests[1]!.messages.slice(-2)).toEqual([
         {
