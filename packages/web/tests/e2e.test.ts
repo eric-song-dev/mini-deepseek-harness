@@ -154,7 +154,7 @@ describe('M4 端到端：真 host + 脚本化 WS 客户端', () => {
       expect(reconnected.events().map((m) => m.event.type)).toEqual([
         'turn/start', 'user', 'assistant', 'turn/end',
       ])
-      expect(reconnected.events()[2]!.event.payload).toEqual({ content: '又见面了' })
+      expect(reconnected.events()[2]!.event.payload).toEqual({ content: '又见面了', usage: { inputTokens: 1, outputTokens: 1 } })
       reconnected.close()
     } finally {
       client.close()

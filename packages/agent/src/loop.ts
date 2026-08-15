@@ -110,7 +110,8 @@ export const agentLoop = Object.assign(
             }
           }
           const result = await llm.chat(messages, chatOptions)
-          const assistantPayload: AssistantEventPayload = { content: result.content }
+          // usage 落日志（M5）：轨迹检查器的 token 显示直接读日志，不另存一份用量。
+          const assistantPayload: AssistantEventPayload = { content: result.content, usage: result.usage }
           if (result.toolCalls !== undefined && result.toolCalls.length > 0) {
             assistantPayload.toolCalls = result.toolCalls
           }

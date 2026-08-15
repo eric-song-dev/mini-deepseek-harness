@@ -156,12 +156,12 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
       expect(events.map((m) => m.event.payload)).toEqual([
         undefined,
         { content: '回显一下' },
-        { content: '', toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }] },
+        { content: '', toolCalls: [{ id: 'c1', name: 'echo', arguments: { text: '喂' } }], usage: { inputTokens: 1, outputTokens: 1 } },
         { name: 'echo', input: { text: '喂' } },
         { name: 'echo', input: { text: '喂' }, output: { echoed: '喂' } },
         { content: '完成' },
         { content: '！' },
-        { content: '完成！' },
+        { content: '完成！', usage: { inputTokens: 1, outputTokens: 1 } },
         { reason: 'done' },
       ])
     } finally {
@@ -193,7 +193,7 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
         'turn/start', 'user', 'assistant', 'turn/end',
       ])
       expect(reconnected.events()[1]!.event.payload).toEqual({ content: '第二问' })
-      expect(reconnected.events()[2]!.event.payload).toEqual({ content: '第二答' })
+      expect(reconnected.events()[2]!.event.payload).toEqual({ content: '第二答', usage: { inputTokens: 1, outputTokens: 1 } })
     } finally {
       await host.dispose()
     }

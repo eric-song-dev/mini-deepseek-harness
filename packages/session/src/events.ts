@@ -48,10 +48,21 @@ export interface ToolCallPayload {
   arguments: Record<string, unknown>
 }
 
+/** 单次模型调用的 token 用量（与 llm 包 ChatUsage 结构相同；session 不依赖 llm，靠结构化兼容）。 */
+export interface SessionUsage {
+  inputTokens: number
+  outputTokens: number
+}
+
 export interface AssistantEventPayload {
   content: string
   /** 模型请求的工具调用（M3 起：assistant 回复可能是"要工具"，纯文本时无此字段）。 */
   toolCalls?: readonly ToolCallPayload[]
+  /**
+   * token 用量（M5 起 loop 把 llm.chat 返回的 usage 写进来，流式/非流式都写）。
+   * 可选：M2–M4 旧日志没有此字段，轨迹投影/检查器兜底显示 `—`。
+   */
+  usage?: SessionUsage
 }
 
 export interface ToolEventPayload {

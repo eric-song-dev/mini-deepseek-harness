@@ -112,6 +112,37 @@ describe('projectTurns（M5：日志投影成按轮分组的轨迹）', () => {
     })
   })
 
+  it('未闭合的轮内又出现新 turn/start：前一轮按 crash 投影、新轮照常开始', () => {
+    const events: SessionEvent[] = [
+      { seq: 2, type: 'turn/start', ts: 40, payload: undefined },
+      { seq: 3, type: 'user', ts: 41, payload: { content: '第一轮没答完' } },
+      { seq: 4, type: 'turn/start', ts: 50, payload: undefined },
+      { seq: 5, type: 'user', ts: 51, payload: { content: '第二轮' } },
+      { seq: 6, type: 'turn/end', ts: 52, payload: { reason: 'done' } },
+    ]
+
+    expect(projectTurns(events)).toEqual([
+      {
+        index: 1,
+        userText: '第一轮没答完',
+        startedAt: 40,
+        endedAt: 41,
+        durationMs: 1,
+        endReason: 'crash',
+        events: [{ seq: 3, type: 'user', ts: 41, durationMs: 1, payload: { content: '第一轮没答完' } }],
+      },
+      {
+        index: 2,
+        userText: '第二轮',
+        startedAt: 50,
+        endedAt: 52,
+        durationMs: 2,
+        endReason: 'done',
+        events: [{ seq: 5, type: 'user', ts: 51, durationMs: 1, payload: { content: '第二轮' } }],
+      },
+    ])
+  })
+
   it('turn/end 的 reason 原样透出（done / limit / crash 是检查器要区分的三种收尾）', () => {
     const base: SessionEvent[] = [
       { seq: 2, type: 'turn/start', ts: 1, payload: undefined },
