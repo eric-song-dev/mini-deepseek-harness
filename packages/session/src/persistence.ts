@@ -1,3 +1,4 @@
+import 'cordis'
 import type { SessionEvent } from './events'
 
 /**
@@ -12,12 +13,42 @@ export interface SessionMeta {
   createdAt: number
 }
 
+/** create 的输入：除 title 外都由后端补齐（id、createdAt）。 */
+export interface CreateSessionInput {
+  title?: string
+}
+
 /**
- * 会话持久化 seam（M1 契约的最小面）：Session 的桥接每次 emit 后调用 append。
- * 完整契约（locate/create/load/list）由任务 4 的契约测试驱动补全；
- * JSONL 是第一个实现，SQLite（backlog #4）只换实现。
+ * 会话持久化 seam：日志落盘的抽象服务。
+ *
+ * 教学要点：会话的"真源"不是某个具体文件格式，而是这套契约。
+ * JSONL 是第一个实现；SQLite（backlog #4）只需另写一个实现并通过同一份契约测试
+ * （tests/contracts/persistence-contract.ts），agent loop 一行都不用改。
  */
 export interface SessionPersistence {
-  /** 追加一条事件到指定会话（按调用顺序落盘）。 */
+  /** 按 id 查找会话元信息；不存在返回 undefined。 */
+  locate(id: string): Promise<SessionMeta | undefined>
+  /** 新建会话：分配 id/createdAt，写入头记录，返回完整 meta。 */
+  create(input: CreateSessionInput): Promise<SessionMeta>
+  /** 追加一条事件（按调用顺序落盘）。 */
   append(id: string, event: SessionEvent): Promise<void>
+  /** 读回会话的完整事件日志（含头记录）；不存在抛 SessionNotFoundError。 */
+  load(id: string): Promise<SessionEvent[]>
+  /** 列出全部会话的 meta（按创建时间倒序，新的在前）。 */
+  list(): Promise<SessionMeta[]>
+}
+
+/** 会话不存在（load/append 到未知 id 时抛出）。 */
+export class SessionNotFoundError extends Error {
+  constructor(id: string) {
+    super(`会话不存在：${id}`)
+    this.name = 'SessionNotFoundError'
+  }
+}
+
+// 服务类型增强：插件可通过 `ctx['session-persistence']` / `ctx.get('session-persistence')` 取到 seam。
+declare module 'cordis' {
+  interface Context {
+    'session-persistence': SessionPersistence
+  }
 }
