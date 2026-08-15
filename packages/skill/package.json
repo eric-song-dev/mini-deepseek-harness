@@ -1,0 +1,23 @@
+{
+  "name": "@mini-dsh/skill",
+  "version": "0.1.0",
+  "description": "Skills seam（注册表 + filesystem 发现）+ skill 工具（模型按需检索技能全文）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/tools": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/client": "workspace:*",
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/test-support": "workspace:*",
+    "@mini-dsh/web": "workspace:*"
+  }
+}

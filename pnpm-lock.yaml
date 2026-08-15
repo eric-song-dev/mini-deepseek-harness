@@ -160,6 +160,31 @@ importers:
         specifier: workspace:*
         version: link:../test-support
 
+  packages/skill:
+    dependencies:
+      '@mini-dsh/tools':
+        specifier: workspace:*
+        version: link:../tools
+      cordis:
+        specifier: 4.0.0-rc.8
+        version: 4.0.0-rc.8
+    devDependencies:
+      '@mini-dsh/client':
+        specifier: workspace:*
+        version: link:../client
+      '@mini-dsh/llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@mini-dsh/session':
+        specifier: workspace:*
+        version: link:../session
+      '@mini-dsh/test-support':
+        specifier: workspace:*
+        version: link:../test-support
+      '@mini-dsh/web':
+        specifier: workspace:*
+        version: link:../web
+
   packages/test-support:
     dependencies:
       cordis:
