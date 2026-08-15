@@ -1,4 +1,4 @@
-import type { Context } from 'cordis'
+import type { Context, Events } from 'cordis'
 
 export interface RecordedEvent {
   /** 事件名。 */
@@ -29,10 +29,15 @@ export interface EventRecorder {
 export function createEventRecorder(ctx: Context, names: readonly string[]): EventRecorder {
   let seq = 0
   const events: RecordedEvent[] = []
+  // 记录器是"任意事件名"的通用工具：事件名在运行时才知道，
+  // 而 ctx.on 的类型按 keyof Events 收窄，这里显式放宽（类型增强见 M1 的事件词汇）。
   const offs = names.map((name) =>
-    ctx.on(name, (...args: unknown[]) => {
-      events.push({ name, args, seq: seq++ })
-    }),
+    ctx.on(
+      name as keyof Events,
+      ((...args: unknown[]) => {
+        events.push({ name, args, seq: seq++ })
+      }) as Events[keyof Events],
+    ),
   )
 
   return {

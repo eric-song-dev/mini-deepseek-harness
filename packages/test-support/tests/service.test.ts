@@ -17,9 +17,9 @@ describe('defineTestService', () => {
   it('注入的服务能被 ctx.get 取到', async () => {
     const { ctx, dispose } = await createTestContext()
     await ctx.plugin(defineTestService('greeting', { hello: () => 'hi' }))
-    const svc = ctx.get('greeting')
+    const svc = ctx.get('greeting', true)
     expect(svc).toBeDefined()
-    expect(svc.hello()).toBe('hi')
+    expect(svc!.hello()).toBe('hi')
     await dispose()
   })
 

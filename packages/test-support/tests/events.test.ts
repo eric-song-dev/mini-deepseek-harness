@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { createEventRecorder, createTestContext } from '@mini-dsh/test-support'
 
+// 用 cordis 模块增强声明本测试用到的事件（教学示范：M1 的事件词汇也用同一机制）
+declare module 'cordis' {
+  interface Events {
+    'say'(message: string): void
+    'keep'(n: number): void
+    'noise'(n: number): void
+    'a'(s: string): void
+    'b'(s: string): void
+  }
+}
+
 describe('createEventRecorder', () => {
   it('按发生顺序记录被监听事件的载荷', async () => {
     const { ctx, dispose } = await createTestContext()
