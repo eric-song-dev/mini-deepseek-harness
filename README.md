@@ -39,4 +39,4 @@ pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 
 ## 状态
 
 M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 + resume +
-崩溃恢复）已完成；M2（LLM seam + 假 LLM + agent loop）待开始。
+崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）已完成；M3（tools + 工具调用循环）待开始。

@@ -1,7 +1,7 @@
 # 需求定稿：mini-deepseek-harness v0.1
 
 - **日期**：2026-08-16
-- **状态**：`proposed`（需求定稿；M0、M1 已完成，当前里程碑 M2 待开始）
+- **状态**：`proposed`（需求定稿；M0、M1、M2 已完成，当前里程碑 M3 待开始）
 
 ## 背景
 
@@ -31,8 +31,25 @@
 ## 下一步（下个 session 起）
 
 - 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M2.md`（**已定稿**，状态 proposed，M1 收尾时撰写：LLM seam +
-  假 LLM + agent loop，任务拆解/TDD 顺序/验收/教程要求齐备）。
+- 执行依据：`docs/milestones/M3.md`（**已定稿**，状态 proposed，M2 收尾时撰写：tools seam +
+  bash/fs 工具 + 工具调用循环，任务拆解/TDD 顺序/验收/教程要求齐备）。
+
+## M2 完成快照（2026-08-16 增补）
+
+- **状态**：M2 已实现并通过验收（全仓 95 测试全绿、typecheck 绿、demo 三幕零 key 可跑、
+  教程四个练习实测通过——含"断言模型收到的 messages"红绿翻转）。状态指针已改 M3 待开始。
+- M2 落地物：`@mini-dsh/llm`（LLM seam + ChatOptions.onChunk 流式预留 + OpenAI 兼容 adapter
+  （默认 DeepSeek，假 HTTP 端点测试）+ openAiLlm/provideLlm 注入插件）、`@mini-dsh/agent`
+  （全仓唯一 loop：turn/start→user→投影→llm.chat→assistant→turn/end，崩溃 turn/end(crash)+
+  上抛，inject=['llm']，promise 链串行化，端到端重启续聊）、test-support +fakellm
+  （台词本/记录请求/耗尽抛错）、session 包 +projectMessages +session-log 只读入口、
+  演示 `chat-demo.ts` + 教程练习 `my-script.ts`/`my-messages.test.ts`、
+  教程 `docs/tutorials/M2-llm-and-loop.md`。
+- spec 预拍板的两处修订（已归档）：①loop 入口从"监听 user 事件"改为服务入口 `loop.chat()`；
+  ②session-log 与 agent-loop 句柄用 defineProperty 自有属性（cordis 服务键按根作用域唯一，
+  并存会话 provide 撞键——实施中实测）。关键决策已归档：
+  `implemented/architecture/2026-08-16-m2-llm-与-loop-决策.md`。
+- M3 spec 已定稿（`docs/milestones/M3.md` 置 proposed）。
 
 ## M1 完成快照（2026-08-16 增补）
 
