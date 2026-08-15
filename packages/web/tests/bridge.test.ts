@@ -128,8 +128,10 @@ describe('RpcBridge seam（M4：连接管理 + 请求分发 + 事件推送的抽
     const bad = client.inbox.filter((m) => m.kind === 'response' && m.ok === false)
     expect(bad).toHaveLength(4)
     for (const msg of bad) {
-      expect(msg).toMatchObject({ ok: false, requestId: 'unknown', error: { name: 'BadRequestError' } })
+      expect(msg).toMatchObject({ ok: false, error: { name: 'BadRequestError' } })
     }
+    // 能识别出 requestId 的坏消息把 requestId 带回，其余用 'unknown'
+    expect(bad.map((m) => (m as { requestId: string }).requestId)).toEqual(['unknown', 'unknown', 'r-4', 'unknown'])
     // 桥还活着：正常请求照常服务
     bridge.handle('alive', () => 'ok')
     client.request('r-5', 'alive')
