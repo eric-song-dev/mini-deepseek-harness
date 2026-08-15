@@ -65,10 +65,11 @@
 - **读者画像**：AI 编程小白 —— 第一次接触 agent、插件架构、事件溯源的学生。默认读者只会基础 TypeScript，其余概念一律从零解释。
 - **每篇教程必讲**：
   1. **动机**：这个 M 解决什么问题、为什么排在这个顺序（依赖关系与前一个 M 的关系）这个 M 在整个系统里处于什么位置？；
-  2. **design** 这个 M 做了什么，design，以及必要时画出图（用 plantUML 的格式，比如 class diagram, sequence diagram, flowchart）
+  2. **design** 这个 M 做了什么，design，以及必要时画出图（用 plantUML 的格式，比如 class diagram, sequence diagram, flowchart）；
   3. **新概念**：本 M 出现的每个新概念，首次出现必须解释（如：什么是 seam、什么是 append-only 日志、什么是投影、什么是 RPC 桥）；
   4. **tradeoff**：关键取舍与理由（如：为什么日志是真源而不是"数据库行 + UI 状态"、为什么 MVP 不做审批栈、为什么 JSONL 而非 SQLite、为什么 loop 是唯一具体逻辑）；
-  5. **动手练习**：一个可跟做的最小实验（如"给你的 profile 加一个打印事件的插件"），练习驱动代码可直接运行。
+  5. ""stepbystep"": 小白开始看这个 M 的代码，应该从头到尾怎么看，从哪部分到哪部分，step by step
+  6. **动手练习**：一个可跟做的最小实验（如"给你的 profile 加一个打印事件的插件"），练习驱动代码可直接运行。
 - **形式**：Markdown，放 `docs/tutorials/M<n>-<slug>.md`，中文，配目录索引 `docs/tutorials/README.md`。
 - **验收（小白验收）**：零 API key 也能跟做 —— 练习全部由假 LLM / 测试脚手架驱动；教程中的命令与代码块可复制即跑。
 - **性质**：教程是文档，不适用 TDD 红绿循环，但必须与里程碑验收一起完成。
