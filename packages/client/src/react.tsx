@@ -49,7 +49,7 @@ export function ClientRoot(props: { ctx: Context }): ReactElement {
         {extras.length > 0 && (
           <div className="dsh-extras">
             {extras.map((slot) => (
-              <section key={slot} className="dsh-extra">
+              <section key={slot} data-slot={slot} className="dsh-extra">
                 {renderSlot(slot)}
               </section>
             ))}

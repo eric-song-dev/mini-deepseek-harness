@@ -124,7 +124,7 @@ describe('client UI 装配（jsdom，M4）', () => {
       { inject: ['slot-registry'] },
     )
     await makeUi({ replies: [{ content: '你好' }], extraPlugins: [myExtraPlugin] })
-    expect(textOf('.dsh-extras .dsh-extra .my-extra')).toBe('我是额外面板')
+    expect(textOf('.dsh-extras [data-slot="my-panel"] .my-extra')).toBe('我是额外面板')
   })
 
   it('完整对话流：新建会话 → 发消息 → 流式分片打字机 → 气泡封印 → tool 卡片出现', async () => {

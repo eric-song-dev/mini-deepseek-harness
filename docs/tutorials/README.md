@@ -9,7 +9,7 @@
 | M1 | [M1-event-log.md](M1-event-log.md) | 事件日志与真源：为什么 append-only、崩溃恢复 |
 | M2 | [M2-llm-and-loop.md](M2-llm-and-loop.md) | seam 与假 LLM：agent loop 怎么驱动会话 |
 | M3 | [M3-tools.md](M3-tools.md) | 工具注册与执行：工具事件如何进轨迹、loop 怎么循环调用 |
-| M4 | （M4 完成时交付） | host↔client 桥：流式消息怎么到浏览器 |
+| M4 | [M4-web.md](M4-web.md) | host↔client 桥：流式消息怎么到浏览器、Slot 怎么装配 UI |
 | M5 | （M5 完成时交付） | 投影视图与 skills：轨迹灵魂的最后一环 |
 
 每篇的验收标准（requirements §5.1"小白验收"）：**零 API key 可跟做**——练习全部由假 LLM / 测试

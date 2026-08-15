@@ -12,7 +12,7 @@ import type { ClientBridge } from '@mini-dsh/client'
  * 玩法（红绿翻转）：
  * 1. 先跑 `pnpm vitest run packages/client/tests/my-first-slot.test.tsx` —— 绿。
  * 2. 把 myExtraPlugin 里注册的 slot 名从 'my-panel' 改成 'hello-panel' —— 红
- *    （extras 区找不到 .my-extra 面板）。
+ *    （断言找的是 [data-slot="my-panel"]，改名后这个 slot 名下没有面板）。
  * 3. 改回来 —— 绿。
  *
  * 要点：客户端也是插件系统——注册一个 slot = 页面上多一个面板，
@@ -51,9 +51,9 @@ describe('M4 练习：Slot 注册的小 UI 插件', () => {
         root = createRoot(container)
         root.render(<ClientRoot ctx={ctx} />)
       })
-      expect(document.querySelector('.dsh-extras .dsh-extra .my-extra')?.textContent).toBe(
-        '我的第一个 Slot 面板',
-      )
+      expect(
+        document.querySelector('.dsh-extras [data-slot="my-panel"] .my-extra')?.textContent,
+      ).toBe('我的第一个 Slot 面板')
     } finally {
       await act(async () => root?.unmount())
       container.remove()
