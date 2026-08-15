@@ -53,6 +53,10 @@
 - spec 预拍板八条逐条核对落地（定夺点 A/B、流式、测试拆分、e2e 路径等）；契约修订
   一处（session.create 返回 {meta, events} 与 resume 对称）。关键决策已归档：
   `implemented/architecture/2026-08-16-m4-web-决策.md`。
+- **浏览器人工验收已由用户实测完成（2026-08-16）**：demo:web 端口 8127 新建会话发
+  "你好"，13 条事件日志与屏幕逐条对应（user 气泡=seq3、tool 卡片=seq5/6 调用结果对、
+  打字机=seq7–11 分片（ts 间隔≈chunkDelay 45ms）、seq12 全文==分片拼接、turn/end done）；
+  M4 验收清单第一项就此关闭，MVP 进度进入 M5。
 
 ## M3 完成快照（2026-08-16 增补）
 
