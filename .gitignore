@@ -5,3 +5,6 @@ coverage/
 *.log
 .DS_Store
 *.tsbuildinfo
+
+# 运行时数据（session JSONL 日志等）
+.mini-dsh/

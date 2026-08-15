@@ -1,0 +1,18 @@
+{
+  "name": "@mini-dsh/session",
+  "version": "0.1.0",
+  "description": "Session 事件词汇 + append-only 日志 + SessionPersistence seam + JSONL 后端",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}
