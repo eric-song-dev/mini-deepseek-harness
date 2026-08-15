@@ -1,2 +1,5 @@
 export { createTestContext } from './context'
 export type { TestContext } from './context'
+export { createEventRecorder } from './events'
+export type { EventRecorder, RecordedEvent } from './events'
+export { defineTestService } from './service'
