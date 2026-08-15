@@ -3,8 +3,8 @@
 教学定位：**全项目测试的公共语言**。之后每个 M 的 seam 契约测试都建立在这三个工具上，
 所以它是第一个要写的包。
 
-> M0 范围：测试 ctx + 测试服务注入 + 事件断言。假 LLM 是 M2 的内容，但包结构与命名
-> 已为它预留位置（`src/fake-llm.ts` 到 M2 再落）。
+> M0 范围：测试 ctx + 测试服务注入 + 事件断言。M2 落地假 LLM（`src/fakellm.ts`），
+> 本 README 已同步。
 
 ## 为什么是这个设计
 
@@ -27,6 +27,10 @@ cordis 插件（函数形态），要注入必须先 `ctx.plugin(...)` 装载。
   声明 `inject: [name]` 的插件可用 `ctx.<name>` 取到。
 - `createEventRecorder(ctx, names)` —— 监听指定事件名，记录 `{ name, args, seq }` 序列；
   提供 `eventsOf` / `last` / `clear` / `dispose`。
+- `createFakeLlm({ replies })`（M2）—— LLM seam 的测试实现：预设台词本按序弹出、可编程
+  `delay`、`requests` 记录每次调用收到的 messages（断言"loop 给模型看了什么"）、回复耗尽抛
+  `FakeLlmExhaustedError`（防静默空转）。类型与 `@mini-dsh/llm` 的 seam **结构化相同**（不
+  import 它，避免 workspace 循环依赖），并已通过 llm 包的 seam 契约测试。
 
 ## 类型约定
 
@@ -36,5 +40,5 @@ cordis 的 `Events` / `Context` 接口用 **`declare module 'cordis'` 模块增�
 
 ## 测试
 
-`tests/` 下是这三个工具自己的契约测试（自己吃自己的狗粮：用 `createTestContext` 测试
-`defineTestService` 和 `createEventRecorder`）。
+`tests/` 下是这些工具自己的契约测试（自己吃自己的狗粮：用 `createTestContext` 测试
+`defineTestService` 和 `createEventRecorder`；`fakellm.test.ts` 覆盖台词本/记录/耗尽/delay/usage）。

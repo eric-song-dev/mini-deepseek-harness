@@ -80,6 +80,17 @@ cordis 的子 ctx 沿原型链**共享**根 ctx 的事件总线实例。若不�
   `turn/end`），单独导出方便教学与测试。
 - `createJsonlPersistence(options)` / `jsonlPersistence(ctx, options)`：后端工厂 / 插件。
 
+### M2 增量：日志的两个新入口
+
+- **`session-log` 服务**（会话 ctx 上的只读属性，`ctx['session-log'].events`）：M2 的 loop
+  从这里读日志快照做投影——"输出写日志、输入读日志"的输入侧通道（M5 的 Trajectory 视图也是
+  从这个真源读）。快照是副本，改不动日志。实现用 `Object.defineProperty` 自有属性遮蔽而非
+  `ctx.provide`：cordis 服务键按**根 ctx 作用域唯一**，并存会话各自 provide 会撞键
+  （同 `events` 的处理，见"会话隔离"）。
+- **`projectMessages(events, { systemPrompt? })`**：日志 → 模型消息数组的投影（M1 预告的
+  投影第一次落地）。user/assistant 事件按日志顺序映射、其余跳过、systemPrompt 拼头部；
+  M5 的 Trajectory 投影是同一真源上的另一个视图。
+
 ## 试试（零 API key）
 
 ```sh
@@ -99,3 +110,5 @@ pnpm demo:session --dir /tmp/sessions --clean   # 换目录看文件布局
   （未来直接复用于 SQLite 后端）+ JSONL 实现细节。
 - `tests/manager.test.ts`：create / resume / list 与"模拟重启"。
 - `tests/repair.test.ts` + `tests/crash-recovery.test.ts`：断尾契约（纯函数 + 端到端幂等）。
+- `tests/project.test.ts`（M2）：messages 投影契约。
+- `tests/session-log.test.ts`（M2）：session-log 只读入口（快照副本、并存会话互不串）。
