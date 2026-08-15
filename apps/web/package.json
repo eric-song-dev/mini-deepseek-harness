@@ -1,0 +1,24 @@
+{
+  "name": "@mini-dsh/app-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web 客户端壳（Vite entry，只注入 bundle-web 组合，不是独立应用）",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/bundle-web": "workspace:*",
+    "@mini-dsh/client": "workspace:*",
+    "cordis": "4.0.0-rc.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^8.0.0"
+  }
+}

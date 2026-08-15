@@ -1,0 +1,19 @@
+{
+  "name": "@mini-dsh/bundle-web",
+  "version": "0.1.0",
+  "description": "web profile 组合：client-shell + 首批 UI 插件排成浏览器可跑的应用",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/client": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}

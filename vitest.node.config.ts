@@ -6,7 +6,7 @@ export default defineConfig({
     name: 'node',
     environment: 'node',
     include: [
-      'packages/{kernel,session,llm,agent,tools,web,test-support}/tests/**/*.test.ts',
+      'packages/{kernel,session,llm,agent,tools,web,bundle-web,test-support}/tests/**/*.test.ts',
       'apps/web/tests/**/*.test.ts',
     ],
   },
