@@ -1,7 +1,7 @@
 # 需求定稿：mini-deepseek-harness v0.1
 
 - **日期**：2026-08-16
-- **状态**：`proposed`（需求定稿；M0–M4 已完成，当前里程碑 M5 待开始）
+- **状态**：`proposed`（需求定稿；M0–M5 全部完成，MVP 10 项收口，进入 backlog 排期）
 
 ## 背景
 
@@ -30,9 +30,32 @@
 
 ## 下一步（下个 session 起）
 
-- 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M5.md`（**已定稿**，状态 proposed，M4 收尾时撰写：
-  Trajectory 简化视图 + skills 子系统，任务拆解/TDD 顺序/验收/教程要求齐备）。
+- MVP 已全部完成。backlog 排期（requirements §6）：CLI（#1）/ 审批栈（#2）/
+  Trajectory v2（#3）/ SQLite 后端（#4）/ subagent（#5）/ MCP-LSP（#6）/
+  goal-plan-todo（#7）/ compaction（#8）/ settings-i18n（#9）/ telemetry（#10）/
+  动态插件热加载（#11）/ 压轴教程"写你的第一个插件"（#12，收官独立项）。
+- 每个 backlog 项的启动方式同里程碑：先定稿 `docs/milestones/` 下的 spec 再编码。
+
+## M5 完成快照（2026-08-16 增补）
+
+- **状态**：M5 已实现并通过验收（全仓 261 测试全绿（node+jsdom 双 workspace，11 包
+  typecheck 绿）、demo:trajectory 零 key 两幕实测（轨迹回放 + skill 自举断言模型收到
+  SKILL.md 全文）、demo:web 冒烟（轨迹面板已入 bundle）、教程四个练习实测通过——含
+  my-turns 删分片与 my-trajectory 改 slot 名两次红绿翻转）。**MVP 10 项全部完成**，
+  状态指针已改"MVP 全部完成 + backlog 排期"，M5.md 置 implemented。
+- M5 落地物：`@mini-dsh/session` +`projectTurns` 轨迹投影（按轮切块/事件耗时/分片聚合
+  {chunks,joined}/断尾 crash 语义）+ assistant `usage` 落日志（loop 写 result.usage，
+  旧日志兜底 —）、`@mini-dsh/skill`（Skills seam 注册表 + filesystem 发现
+  `<dir>/<name>/SKILL.md` + skill 工具 list/get"输出是内容异常是结果"+ 自举 e2e）、
+  `@mini-dsh/client` +ui-trajectory（slot trajectory → extras 区全宽面板：轮表/事件
+  明细/点选检查器/tool 配对高亮/token 显示，shell 与 entry 一行不改——M4 承诺兑现）、
+  `@mini-dsh/bundle-web` 组合 +1 行、`apps/web` 轨迹面板样式、
+  演示 `trajectory-demo.ts` + 教程练习（my-turns/my-skill/my-trajectory）、
+  教程 `docs/tutorials/M5-trajectory-and-skills.md`。
+- spec 预拍板七条逐条核对落地（含实施修订：usage 类型 session 本地定义、事件耗时
+  定义、断尾/嵌套 turn/start 语义、filesystem 边界、选中态按 seq、旧测试契约同步）。
+  关键决策已归档：`implemented/architecture/2026-08-16-m5-轨迹-与-skills-决策.md`。
+- 浏览器人工验收（demo:web 轨迹面板点选回放）路径已就绪，留给用户实测关闭（同 M4 流程）。
 
 ## M4 完成快照（2026-08-16 增补）
 

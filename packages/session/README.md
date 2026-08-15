@@ -17,7 +17,7 @@ append-only 的 `SessionEvent` 序列，loop 只是产生这段序列的来源�
 | `turn/start` | 无 | 一轮对话开始 |
 | `turn/end` | `{ reason: 'done' \| 'user' \| 'crash' \| 'limit' }` | 一轮对话结束；`crash` 由崩溃恢复补写，`limit` 是 M3 的步数超限 |
 | `user` | `{ content: string }` | 用户消息到达 |
-| `assistant` | `{ content: string, toolCalls? }` | 助手回复；M3 起回复可能是"要工具"（带 toolCalls） |
+| `assistant` | `{ content: string, toolCalls?, usage? }` | 助手回复；M3 起回复可能是"要工具"（带 toolCalls）；M5 起带 token 用量（旧日志无此字段） |
 | `tool` | `{ name, input, output? }` | 工具调用：一次调用落两条（调用无 output、结果带 output） |
 
 另外有**头记录** `session/created`（`seq: 1`，payload 是会话 meta）：它由持久化 `create`
@@ -103,6 +103,17 @@ cordis 的子 ctx 沿原型链**共享**根 ctx 的事件总线实例。若不�
 - **`SessionMeta.cwd?`**：会话工作目录（M3 spec 决策 7）。`SessionManager.create({ cwd })`
   记入 JSONL 头记录——M1 的头记录格式天然兼容，旧会话 resume 时字段缺省。
 
+### M5 增量：轨迹投影 + usage 落日志
+
+- **`projectTurns(events)`**（`src/turns.ts`）：输出侧投影——按轮分组
+  `{ index, userText, startedAt, endedAt, durationMs, endReason, events }`，轮内事件带
+  `seq/type/ts/durationMs/payload` 摘要；连续分片聚合一行（`{ chunks, joined }`）；断尾轮
+  按 M1 修复语义投影成 `endReason: 'crash'`。与 `projectMessages` 成对：同一份日志、两个
+  消费者。轨迹面板（client）、demo、测试共用。
+- **`AssistantEventPayload.usage?`**：M5 起 loop 把 `llm.chat` 的 usage 写进 assistant
+  事件（类型在 session 本地定义、与 llm 包结构化兼容——session 不依赖 llm）。旧日志无此
+  字段，投影与检查器兜底显示 `—`。
+
 ## 试试（零 API key）
 
 ```sh
@@ -124,3 +135,5 @@ pnpm demo:session --dir /tmp/sessions --clean   # 换目录看文件布局
 - `tests/repair.test.ts` + `tests/crash-recovery.test.ts`：断尾契约（纯函数 + 端到端幂等）。
 - `tests/project.test.ts`（M2）：messages 投影契约。
 - `tests/session-log.test.ts`（M2）：session-log 只读入口（快照副本、并存会话互不串）。
+- `tests/turns.test.ts`（M5）：轨迹投影契约（轮切块/耗时/分片聚合/断尾/旧日志兜底）。
+- `tests/my-turns.test.ts`（M5 教程练习）：projectTurns 断言的红绿翻转。
