@@ -1,0 +1,24 @@
+{
+  "name": "@mini-dsh/client",
+  "version": "0.1.0",
+  "description": "Client Slot seam + 首批 UI 插件（会话列表/composer/流式消息/tool 卡片）+ client-shell 装配",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/session": "workspace:*",
+    "cordis": "4.0.0-rc.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*",
+    "@mini-dsh/web": "workspace:*",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  }
+}
