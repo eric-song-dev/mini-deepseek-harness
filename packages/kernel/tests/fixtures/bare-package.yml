@@ -1,0 +1,4 @@
+plugins:
+  - name: '@mini-dsh-fixtures/hello-plugin'
+    options:
+      message: ciao

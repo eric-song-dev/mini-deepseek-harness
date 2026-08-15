@@ -1,0 +1,4 @@
+plugins:
+  - name: ./plugins/greet.ts
+    options:
+      message: bonjour

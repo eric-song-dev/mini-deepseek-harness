@@ -1,0 +1,14 @@
+{
+  "name": "@mini-dsh-fixtures/hello-plugin",
+  "version": "0.1.0",
+  "description": "kernel 测试夹具：一个纯 JS 的 npm 包插件（验证裸包名插件行的装载）",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  }
+}

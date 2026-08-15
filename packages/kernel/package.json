@@ -1,0 +1,20 @@
+{
+  "name": "@mini-dsh/kernel",
+  "version": "0.1.0",
+  "description": "启动器 + profile 加载：把 profile.yml 的插件行用 cordis 组装成 ctx",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cordis": "4.0.0-rc.8",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*",
+    "@mini-dsh-fixtures/hello-plugin": "file:./tests/fixtures/hello-pkg"
+  }
+}
