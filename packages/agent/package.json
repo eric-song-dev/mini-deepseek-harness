@@ -12,6 +12,7 @@
   "dependencies": {
     "@mini-dsh/llm": "workspace:*",
     "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/tools": "workspace:*",
     "cordis": "4.0.0-rc.8"
   },
   "devDependencies": {

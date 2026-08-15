@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createFakeLlm, createTestContext } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
+import { createToolRegistry, provideTools } from '@mini-dsh/tools'
 import { agentLoop } from '@mini-dsh/agent'
 
 /**
@@ -19,6 +20,7 @@ describe('M2 教程练习：断言模型收到的 messages', () => {
     const { ctx, dispose } = await createTestContext()
     const fake = createFakeLlm({ replies: REPLIES.map((content) => ({ content })) })
     await ctx.plugin(provideLlm, fake)
+    await ctx.plugin(provideTools, createToolRegistry())
     const session = await openSession(ctx, { id: 'my', meta: { id: 'my', title: '', createdAt: 0 } })
     const fiber = await session.ctx.plugin(agentLoop)
     const loop = fiber.ctx['agent-loop']

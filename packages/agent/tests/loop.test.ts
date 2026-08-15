@@ -4,11 +4,13 @@ import type { FakeLlm } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
 import type { SessionConfig, SessionEvent } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
+import { createToolRegistry, provideTools } from '@mini-dsh/tools'
 import { agentLoop } from '@mini-dsh/agent'
 import type { AgentLoop, AgentLoopConfig } from '@mini-dsh/agent'
 
 /**
- * 组装最小 harness：根 ctx 提供假 LLM（provideLlm 插件）→ openSession → 会话 ctx 装 agentLoop。
+ * 组装最小 harness：根 ctx 提供假 LLM（provideLlm）与 tools 注册表（provideTools，
+ * M3 起 loop 的 inject 依赖它）→ openSession → 会话 ctx 装 agentLoop。
  * "换 provider = 换插件"：所有测试与 demo 都走这条真实注入链。
  */
 async function makeHarness(options: {
@@ -19,6 +21,7 @@ async function makeHarness(options: {
   const { ctx, dispose } = await createTestContext()
   const fake = createFakeLlm({ replies: options.replies ?? [] })
   await ctx.plugin(provideLlm, fake)
+  await ctx.plugin(provideTools, createToolRegistry())
   const sessionConfig: SessionConfig = { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } }
   if (options.events !== undefined) sessionConfig.events = options.events
   const session = await openSession(ctx, sessionConfig)
@@ -187,6 +190,7 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
     const { ctx, dispose } = await createTestContext()
     const fake = createFakeLlm({ replies: [{ content: '给 A' }, { content: '给 B' }] }) as FakeLlm
     await ctx.plugin(provideLlm, fake)
+    await ctx.plugin(provideTools, createToolRegistry())
     const a = await openSession(ctx, { id: 'a', meta: { id: 'a', title: '', createdAt: 0 } })
     const b = await openSession(ctx, { id: 'b', meta: { id: 'b', title: '', createdAt: 0 } })
     try {
