@@ -112,6 +112,8 @@ export class Session {
   private append(type: SessionEventType, payload: unknown) {
     const event: SessionEvent = { seq: this.nextSeq++, type, ts: Date.now(), payload }
     this.events.push(event)
+    // 追加通知（M4）：host 桥接适配器监听它推送实时事件。同步 emit = 推送顺序 == 日志顺序。
+    this.ctx.emit('session/append', event)
     const persistence = this.persistence
     if (!persistence) return
     const write = this.pendingWrites.then(() => persistence.append(this.id, event))

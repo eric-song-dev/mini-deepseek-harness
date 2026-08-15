@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestContext } from '@mini-dsh/test-support'
+import { createEventRecorder, createTestContext } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
 import type { SessionEvent, SessionLog } from '@mini-dsh/session'
 
@@ -44,6 +44,22 @@ describe('session-log 服务（M2：日志真源的只读入口）', () => {
         { id: 's1', title: '', createdAt: 0 },
         { content: '甲' },
         { content: '乙' },
+      ])
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('session/append 事件（M4）：每次追加日志条目时同步发出，载荷是刚追加的完整条目（含 seq）', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const session = await openSession(ctx, { id: 's1', meta: { id: 's1', title: '', createdAt: 0 } })
+    const recorder = createEventRecorder(session.ctx, ['session/append'])
+    try {
+      session.ctx.emit('user', { content: '你好' })
+      session.ctx.emit('assistant', { content: '你好呀' })
+      expect(recorder.eventsOf('session/append').map((event) => event.args[0])).toEqual([
+        { seq: 2, type: 'user', ts: expect.any(Number) as unknown, payload: { content: '你好' } },
+        { seq: 3, type: 'assistant', ts: expect.any(Number) as unknown, payload: { content: '你好呀' } },
       ])
     } finally {
       await dispose()

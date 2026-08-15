@@ -19,6 +19,11 @@ declare module 'cordis' {
     'assistant/stream'(payload: AssistantStreamPayload): void
     /** 工具调用（M3 起由工具执行管线落事件）。 */
     'tool'(payload: ToolEventPayload): void
+    /**
+     * 日志追加通知（M4）：会话日志每追加一条条目后同步发出，载荷是刚追加的完整条目。
+     * 它本身**不落日志**——host 桥接适配器监听它，把实时事件推给 client。
+     */
+    'session/append'(event: SessionEvent): void
   }
 }
 
