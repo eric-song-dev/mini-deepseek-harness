@@ -61,4 +61,61 @@ describe('createFakeLlm（假 LLM，M2）', () => {
       usage: { inputTokens: 7, outputTokens: 3 },
     })
   })
+
+  it('工具调用回复：result 携带结构化 toolCalls（arguments 已解析），content 默认空串', async () => {
+    const llm = createFakeLlm({
+      replies: [
+        { toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }] },
+        { content: '最终回答' },
+      ],
+    })
+    await expect(llm.chat([{ role: 'user', content: '帮我读文件' }])).resolves.toEqual({
+      content: '',
+      usage: { inputTokens: 1, outputTokens: 1 },
+      toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }],
+    })
+    await expect(llm.chat([{ role: 'user', content: 'x' }])).resolves.toMatchObject({ content: '最终回答' })
+  })
+
+  it('工具调用回复与文本回复可混排（台词本：要工具 → 要工具 → 最终回答）', async () => {
+    const llm = createFakeLlm({
+      replies: [
+        { toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }] },
+        { toolCalls: [{ id: 'c2', name: 'edit', arguments: { path: 'a.txt', oldText: '旧', newText: '新' } }] },
+        { content: '文件已更新。' },
+      ],
+    })
+    const first = await llm.chat([{ role: 'user', content: 'x' }])
+    const second = await llm.chat([{ role: 'user', content: 'x' }])
+    const third = await llm.chat([{ role: 'user', content: 'x' }])
+    expect(first.toolCalls).toEqual([{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }])
+    expect(second.toolCalls).toEqual([
+      { id: 'c2', name: 'edit', arguments: { path: 'a.txt', oldText: '旧', newText: '新' } },
+    ])
+    expect(third.toolCalls).toBeUndefined()
+    expect(third.content).toBe('文件已更新。')
+  })
+
+  it('请求快照记录 tools 声明（断言 loop 给模型传了哪些工具），未传时为空数组', async () => {
+    const llm = createFakeLlm({ replies: [{ content: 'ok' }, { content: 'ok' }] })
+    const tools = [{ name: 'read', description: '读文件', parameters: { type: 'object' } }]
+    await llm.chat([{ role: 'user', content: 'x' }], { tools })
+    expect(llm.requests[0]!.tools).toEqual(tools)
+    await llm.chat([{ role: 'user', content: 'x' }])
+    expect(llm.requests[1]!.tools).toEqual([])
+  })
+
+  it('role:tool 结果消息与带 toolCalls 的 assistant 消息原样记录在请求快照里', async () => {
+    const llm = createFakeLlm({ replies: [{ content: 'ok' }] })
+    const messages = [
+      {
+        role: 'assistant' as const,
+        content: '',
+        toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }],
+      },
+      { role: 'tool' as const, toolCallId: 'c1', content: '{"content":"hi"}' },
+    ]
+    await llm.chat(messages)
+    expect(llm.requests[0]!.messages).toEqual(messages)
+  })
 })
