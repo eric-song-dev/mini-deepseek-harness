@@ -119,3 +119,44 @@ describe('createFakeLlm（假 LLM，M2）', () => {
     expect(llm.requests[0]!.messages).toEqual(messages)
   })
 })
+
+describe('流式分片（M4）', () => {
+  it('chunks 回复：按顺序逐片回调 onChunk，resolve 的 content 是拼接全文', async () => {
+    const llm = createFakeLlm({ replies: [{ chunks: ['你', '好', '呀'] }] })
+    const seen: string[] = []
+    const result = await llm.chat([{ role: 'user', content: 'hi' }], { onChunk: (chunk) => seen.push(chunk) })
+    expect(seen).toEqual(['你', '好', '呀'])
+    expect(result.content).toBe('你好呀')
+  })
+
+  it('chunkDelay 在每片之前生效（fake timers 验证分片时序）', async () => {
+    vi.useFakeTimers()
+    try {
+      const llm = createFakeLlm({ replies: [{ chunks: ['甲', '乙'], chunkDelay: 10 }] })
+      const seen: string[] = []
+      const pending = llm.chat([{ role: 'user', content: 'x' }], { onChunk: (chunk) => seen.push(chunk) })
+      await vi.advanceTimersByTimeAsync(9)
+      expect(seen).toEqual([])
+      await vi.advanceTimersByTimeAsync(1)
+      expect(seen).toEqual(['甲'])
+      await vi.advanceTimersByTimeAsync(10)
+      expect(seen).toEqual(['甲', '乙'])
+      await expect(pending).resolves.toMatchObject({ content: '甲乙' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('未传 onChunk：chunks 静默拼成全文（非流式环境回退）', async () => {
+    const llm = createFakeLlm({ replies: [{ chunks: ['流', '式'] }] })
+    const result = await llm.chat([{ role: 'user', content: 'x' }])
+    expect(result.content).toBe('流式')
+  })
+
+  it('chunks 与 toolCalls 同时给是脚本错误（互斥语义，早失败）', async () => {
+    const llm = createFakeLlm({
+      replies: [{ chunks: ['a'], toolCalls: [{ id: 'c1', name: 'read', arguments: {} }] }],
+    })
+    await expect(llm.chat([{ role: 'user', content: 'x' }])).rejects.toThrow(/互斥/)
+  })
+})
