@@ -10,6 +10,8 @@ export interface LlmContractHarness {
   make: () => LLM
   /** 每个用例创建一个必失败实现（chat 一定以 rejection 结束）。 */
   makeFailing: () => LLM
+  /** 每个用例创建一个流式实现（传 onChunk 时会逐片回调）。 */
+  makeStreaming: () => LLM
   /** 取回最近一次 chat 收到的 messages（顺序断言用）。 */
   lastMessages: (llm: LLM) => readonly ChatMessage[] | undefined
   /** 取回最近一次 chat 收到的工具声明（顺序断言用）。 */
@@ -71,6 +73,16 @@ export function runLlmContract(harness: LlmContractHarness): void {
       // 契约要点：任何实现都要能"吃下"带工具历史的消息序列并正常回复
       // （回复文本由各实现决定，不断言具体内容）。
       expect(typeof result.content).toBe('string')
+    })
+
+    it('onChunk 传入时分片按顺序回调，最终 content 为各分片拼接全文（M4 流式契约）', async () => {
+      const streamed = harness.makeStreaming()
+      const seen: string[] = []
+      const result = await streamed.chat([{ role: 'user', content: 'x' }], {
+        onChunk: (chunk) => seen.push(chunk),
+      })
+      expect(seen.length).toBeGreaterThan(0)
+      expect(seen.join('')).toBe(result.content)
     })
   })
 }

@@ -6,6 +6,7 @@ import { runLlmContract } from './contracts/llm-contract'
 runLlmContract({
   make: () => createFakeLlm({ replies: [{ content: '契约回复' }] }),
   makeFailing: () => createFakeLlm({ replies: [] }),
+  makeStreaming: () => createFakeLlm({ replies: [{ chunks: ['甲', '乙', '丙'] }] }),
   lastMessages: (llm) => (llm as FakeLlm).requests.at(-1)?.messages,
   lastTools: (llm) => (llm as FakeLlm).requests.at(-1)?.tools,
 })

@@ -33,6 +33,44 @@ const okCompletion = {
   usage: { prompt_tokens: 12, completion_tokens: 7, total_tokens: 19 },
 }
 
+// ---- 假 SSE 端点（流式模拟：frames 逐帧发出，raw 走原始 SSE 文本）----
+
+interface SseResponse {
+  status?: number
+  /** SSE `data:` 帧的载荷序列；自动追加 `data: [DONE]`。 */
+  frames?: unknown[]
+  /** 原始 SSE 文本（完全自控：注释行、event 行、分帧边界）；优先于 frames。 */
+  raw?: string
+}
+
+function createFakeSseHttp(respond: (url: string, init: RequestInit) => SseResponse): FakeHttp {
+  const calls: CapturedCall[] = []
+  const fetchImpl = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const url = String(input)
+    const captured = init ?? {}
+    calls.push({ url, init: captured })
+    const { status = 200, frames, raw } = respond(url, captured)
+    const text =
+      raw ?? frames?.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join('') + 'data: [DONE]\n\n'
+    // 每帧一个 enqueue：adapter 的增量读取与真实网络分片同构（不整段塞给 body）
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const lines = text.split('\n')
+        for (const line of lines) controller.enqueue(new TextEncoder().encode(line + '\n'))
+        controller.close()
+      },
+    })
+    return new Response(stream, { status, headers: { 'content-type': 'text/event-stream' } })
+  }
+  return { fetch: fetchImpl as typeof fetch, calls }
+}
+
+function sseChunk(delta: unknown, usage?: { prompt_tokens: number; completion_tokens: number }): unknown {
+  const chunk: Record<string, unknown> = { choices: [{ delta }] }
+  if (usage) chunk.usage = usage
+  return chunk
+}
+
 function lastRequestMessages(http: FakeHttp): readonly ChatMessage[] | undefined {
   const call = http.calls.at(-1)
   if (!call) return undefined
@@ -99,13 +137,22 @@ describe('createOpenAiLlm（OpenAI 兼容 adapter，M2）', () => {
 
 describe('OpenAI 兼容 adapter 通过 LLM seam 契约', () => {
   let http: FakeHttp
+  let sseHttp: FakeHttp
   beforeEach(() => {
     http = createFakeHttp(() => ({ body: okCompletion }))
+    sseHttp = createFakeSseHttp(() => ({
+      frames: [
+        sseChunk({ content: '甲' }),
+        sseChunk({ content: '乙' }),
+        sseChunk({ content: '丙' }, { prompt_tokens: 3, completion_tokens: 3 }),
+      ],
+    }))
   })
   runLlmContract({
     make: () => createOpenAiLlm({ apiKey: 'k', fetch: http.fetch }),
     makeFailing: () =>
       createOpenAiLlm({ fetch: createFakeHttp(() => ({ status: 500, body: {} })).fetch }),
+    makeStreaming: () => createOpenAiLlm({ apiKey: 'k', fetch: sseHttp.fetch }),
     lastMessages: () => lastRequestMessages(http),
     lastTools: () => {
       const call = http.calls.at(-1)
@@ -197,6 +244,76 @@ describe('createOpenAiLlm（工具调用协议，M3）', () => {
       content: '',
       toolCalls: [{ id: 'c1', name: 'bash', arguments: {} }],
     })
+  })
+})
+
+describe('createOpenAiLlm（流式，M4）', () => {
+  function lastBody(http: FakeHttp): Record<string, unknown> {
+    return JSON.parse(http.calls.at(-1)!.init.body as string) as Record<string, unknown>
+  }
+
+  it('传 onChunk 时请求 stream:true + stream_options.include_usage；不传时 stream:false 且无 stream_options', async () => {
+    const http = createFakeSseHttp(() => ({ frames: [sseChunk({ content: '好' })] }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    await llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })
+    expect(lastBody(http).stream).toBe(true)
+    expect(lastBody(http).stream_options).toEqual({ include_usage: true })
+    await llm.chat([{ role: 'user', content: 'x' }])
+    expect(lastBody(http).stream).toBe(false)
+    expect('stream_options' in lastBody(http)).toBe(false)
+  })
+
+  it('SSE data: 帧逐帧回调 onChunk（跳过注释/event/空行），content 为拼接全文，usage 取带 usage 的帧', async () => {
+    const http = createFakeSseHttp(() => ({
+      raw: [
+        ': keep-alive 注释行',
+        '',
+        'event: message',
+        'data: {"choices":[{"delta":{"content":"你"}}]}',
+        '',
+        'data: {"choices":[{"delta":{"content":"好"}}]}',
+        'data: {"choices":[{"delta":{"content":"呀"}}],"usage":{"prompt_tokens":9,"completion_tokens":3}}',
+        '',
+      ].join('\n') + '\ndata: [DONE]\n\n',
+    }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    const seen: string[] = []
+    const result = await llm.chat([{ role: 'user', content: 'x' }], { onChunk: (chunk) => seen.push(chunk) })
+    expect(seen).toEqual(['你', '好', '呀'])
+    expect(result.content).toBe('你好呀')
+    expect(result.usage).toEqual({ inputTokens: 9, outputTokens: 3 })
+    expect(result.toolCalls).toBeUndefined()
+  })
+
+  it('流式 tool_calls 增量按 index 累积（id/name/arguments 跨帧拼接），arguments 解析成对象', async () => {
+    const http = createFakeSseHttp(() => ({
+      frames: [
+        sseChunk({ tool_calls: [{ index: 0, id: 'c1', function: { name: 'read_file', arguments: '{"path":' } }] }),
+        sseChunk({ tool_calls: [{ index: 0, function: { arguments: '"a.txt"}' } }] }),
+        sseChunk({}),
+      ],
+    }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    const result = await llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })
+    expect(result.content).toBe('')
+    expect(result.toolCalls).toEqual([{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }])
+    expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0 })
+  })
+
+  it('流式非 2xx 抛 LlmHttpError（含状态码）', async () => {
+    const http = createFakeSseHttp(() => ({ status: 401, raw: 'data: {"error":"bad key"}\n\n' }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    await expect(llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })).rejects.toMatchObject({
+      status: 401,
+    })
+  })
+
+  it('流式结束仍无内容且无工具调用时抛缺 content 错（不静默空回复）', async () => {
+    const http = createFakeSseHttp(() => ({ frames: [] }))
+    const llm = createOpenAiLlm({ fetch: http.fetch })
+    await expect(llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })).rejects.toThrow(
+      /缺少 choices/,
+    )
   })
 })
 
