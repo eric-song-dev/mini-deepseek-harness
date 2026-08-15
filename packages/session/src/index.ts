@@ -9,3 +9,4 @@ export {
 export type { CreateSessionInput, SessionMeta, SessionPersistence } from './persistence'
 export { createJsonlPersistence, defaultSessionDir, jsonlPersistence } from './backends/jsonl'
 export type { JsonlOptions } from './backends/jsonl'
+export { SessionManager } from './manager'
