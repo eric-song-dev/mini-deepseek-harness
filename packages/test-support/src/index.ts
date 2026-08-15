@@ -11,6 +11,8 @@ export type {
   FakeLlmReply,
   FakeLlmRequest,
   FakeLlmResult,
+  FakeLlmToolCall,
+  FakeLlmToolSpec,
   FakeLlmUsage,
 } from './fakellm'
 export { defineTestService } from './service'
