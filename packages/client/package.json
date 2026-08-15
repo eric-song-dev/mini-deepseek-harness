@@ -19,6 +19,8 @@
     "@mini-dsh/test-support": "workspace:*",
     "@mini-dsh/web": "workspace:*",
     "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0"
+    "@types/react-dom": "^19.1.0",
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/tools": "workspace:*"
   }
 }
