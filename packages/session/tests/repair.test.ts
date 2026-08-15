@@ -9,12 +9,13 @@ const turnStart: SessionEvent = { seq: 2, type: 'turn/start', ts: 1001, payload:
 
 describe('repairDanglingTurn（纯函数：断尾检测 + 补 turn/end）', () => {
   it('日志以 turn/start 收尾时，补一条 turn/end（reason: crash），seq 接续', () => {
-    const { events, repaired } = repairDanglingTurn([header, turnStart])
+    const input = [header, turnStart]
+    const { events, repaired } = repairDanglingTurn(input)
     expect(repaired).toMatchObject({ seq: 3, type: 'turn/end', payload: { reason: 'crash' } })
     expect(repaired!.ts).toBeTypeOf('number')
     expect(events).toEqual([header, turnStart, repaired])
     // 原数组不被修改（纯函数）
-    expect([header, turnStart]).toHaveLength(2)
+    expect(input).toHaveLength(2)
   })
 
   it('日志正常收尾（turn/end）时不补', () => {
@@ -25,9 +26,11 @@ describe('repairDanglingTurn（纯函数：断尾检测 + 补 turn/end）', () =
   })
 
   it('日志只有头记录时不补', () => {
-    const result = repairDanglingTurn([header])
+    const events = [header]
+    const result = repairDanglingTurn(events)
     expect(result.repaired).toBeNull()
-    expect(result.events).toBe([header])
+    // 无需修复时原引用直接返回（零复制）
+    expect(result.events).toBe(events)
   })
 
   it('日志为空时不补', () => {

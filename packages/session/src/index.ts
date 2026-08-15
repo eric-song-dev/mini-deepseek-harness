@@ -10,3 +10,5 @@ export type { CreateSessionInput, SessionMeta, SessionPersistence } from './pers
 export { createJsonlPersistence, defaultSessionDir, jsonlPersistence } from './backends/jsonl'
 export type { JsonlOptions } from './backends/jsonl'
 export { SessionManager } from './manager'
+export { repairDanglingTurn } from './repair'
+export type { RepairResult } from './repair'

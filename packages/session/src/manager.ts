@@ -1,6 +1,7 @@
 import { Context, Service } from 'cordis'
 import { openSession } from './session'
 import type { Session } from './session'
+import { repairDanglingTurn } from './repair'
 import { SessionNotFoundError } from './persistence'
 import type { CreateSessionInput, SessionMeta, SessionPersistence } from './persistence'
 
@@ -31,9 +32,11 @@ export class SessionManager extends Service {
     return openSession(this.ctx, { id: meta.id, meta, persistence: this.persistence })
   }
 
-  /** 重开会话：读回日志并返回可继续追加的 Session；不存在抛 SessionNotFoundError。 */
+  /** 重开会话：读回日志（含崩溃修复）并返回可继续追加的 Session；不存在抛 SessionNotFoundError。 */
   async resume(id: string): Promise<Session> {
-    const events = await this.persistence.load(id)
+    const loaded = await this.persistence.load(id)
+    const { events, repaired } = repairDanglingTurn(loaded)
+    if (repaired) await this.persistence.append(id, repaired)
     const meta = await this.persistence.locate(id)
     if (!meta) throw new SessionNotFoundError(id)
     return openSession(this.ctx, { id, meta, persistence: this.persistence, events })
