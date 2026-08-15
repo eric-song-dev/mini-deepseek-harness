@@ -16,11 +16,14 @@
     "demo:session": "tsx packages/session/examples/roundtrip.ts",
     "demo:agent": "tsx packages/agent/examples/chat-demo.ts",
     "demo:tools": "tsx packages/agent/examples/tools-demo.ts",
-    "demo:real": "tsx packages/agent/examples/real-chat.ts"
+    "demo:real": "tsx packages/agent/examples/real-chat.ts",
+    "build:web": "pnpm --filter @mini-dsh/app-web build",
+    "demo:web": "pnpm build:web && tsx packages/web/examples/web-demo.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "cordis": "4.0.0-rc.8",
+    "jsdom": "^30.0.1",
     "tsx": "^4.20.0",
     "typescript": "~5.9.3",
     "vitest": "^4.1.10"
