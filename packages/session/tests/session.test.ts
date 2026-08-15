@@ -100,4 +100,21 @@ describe('Session：append-only 日志 + emit→append 桥接', () => {
       await dispose()
     }
   })
+
+  it('并存的多个会话互不串台：每个桥接只记自己 ctx 上 emit 的事件', async () => {
+    const { ctx, dispose } = await createTestContext()
+    const a = await openSession(ctx, { id: 's-a', meta: { ...meta, id: 's-a' } })
+    const b = await openSession(ctx, { id: 's-b', meta: { ...meta, id: 's-b' } })
+    try {
+      a.ctx.emit('user', { content: 'A 说的' })
+      b.ctx.emit('user', { content: 'B 说的' })
+
+      expect(a.log.map((e) => e.type)).toEqual(['session/created', 'user'])
+      expect(a.log.at(-1)!.payload).toEqual({ content: 'A 说的' })
+      expect(b.log.map((e) => e.type)).toEqual(['session/created', 'user'])
+      expect(b.log.at(-1)!.payload).toEqual({ content: 'B 说的' })
+    } finally {
+      await dispose()
+    }
+  })
 })
