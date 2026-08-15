@@ -31,4 +31,16 @@
 ## 下一步（下个 session 起）
 
 - 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M0.md`（详细 spec，含任务拆解、TDD 顺序、验收、教程、收尾）。
+- 执行依据：`docs/milestones/M1.md`（**已定稿**，状态 proposed，M0 收尾时撰写：事件词汇 +
+  JSONL 持久化 + resume + 崩溃恢复，任务拆解/TDD 顺序/验收/教程要求齐备）。
+
+## M0 完成快照（2026-08-16 增补）
+
+- **状态**：M0 已实现并通过验收（空 profile 启动、ctx 注入测试服务、23 个测试全绿、typecheck 绿、
+  demo 可跑、教程交付并实测小白练习）。状态指针已改 M1 待开始。
+- M0 落地物：monorepo 骨架（pnpm workspaces + bundler 解析 + vitest 单根配置）、
+  `@mini-dsh/test-support`（createTestContext / defineTestService / createEventRecorder）、
+  `@mini-dsh/kernel`（parseProfile / loadProfile / startProfile + setup 钩子 + app/ready|stop 词汇）、
+  `examples/hello-profile` demo、两个包的教学 README、教程 `docs/tutorials/M0-kernel-and-plugins.md`。
+- M0 关键技术决策（cordis@4.0.0-rc.8、bundler 解析、模块增强类型化、profile 格式、pnpm allowBuilds）
+  已归档：`implemented/architecture/2026-08-16-m0-技术决策.md`。

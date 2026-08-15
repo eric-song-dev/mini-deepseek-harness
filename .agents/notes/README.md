@@ -32,7 +32,8 @@
 
 ## 当前状态指针
 
-- 里程碑：**M0（待开始）** —— 详细 spec：`docs/milestones/M0.md`
+- 里程碑：**M1（待开始）** —— 详细 spec：`docs/milestones/M1.md`（已定稿，状态 proposed）
 - 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`
+- M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - 总纲：`docs/requirements.md`（v0.1，需求已定稿）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）
