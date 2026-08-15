@@ -11,6 +11,7 @@ pnpm install
 pnpm test        # 全量测试（Vitest）
 pnpm typecheck   # 全量类型检查
 pnpm demo:kernel packages/kernel/examples/hello-profile/profile.yml  # M0 demo：启动一个 profile
+pnpm demo:session  # M1 demo：事件日志落盘 / resume / 崩溃恢复（零 API key）
 ```
 
 ## 包布局（monorepo）
@@ -18,6 +19,7 @@ pnpm demo:kernel packages/kernel/examples/hello-profile/profile.yml  # M0 demo�
 | 包 | 一句话 |
 |---|---|
 | `packages/kernel` | 启动器 + profile 加载（`profile.yml` → cordis ctx），唯一"启动"的地方 |
+| `packages/session` | 事件词汇 + append-only 日志 + SessionPersistence seam + JSONL 后端（日志是真源） |
 | `packages/test-support` | 测试公共语言：测试 ctx、测试服务注入、事件断言 |
 
 其余包随里程碑逐个出现，见 `docs/requirements.md` §7。
@@ -36,4 +38,5 @@ pnpm demo:kernel packages/kernel/examples/hello-profile/profile.yml  # M0 demo�
 
 ## 状态
 
-M0（脚手架 + test-support + cordis 最小启动）已完成；M1（Session 事件词汇 + 持久化）待开始。
+M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 + resume +
+崩溃恢复）已完成；M2（LLM seam + 假 LLM + agent loop）待开始。

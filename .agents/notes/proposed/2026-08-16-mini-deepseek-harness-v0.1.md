@@ -1,7 +1,7 @@
 # 需求定稿：mini-deepseek-harness v0.1
 
 - **日期**：2026-08-16
-- **状态**：`proposed`（需求讨论完成，编码未开始）
+- **状态**：`proposed`（需求定稿；M0、M1 已完成，当前里程碑 M2 待开始）
 
 ## 背景
 
@@ -31,8 +31,22 @@
 ## 下一步（下个 session 起）
 
 - 启动方式：复制 `docs/session-prompts/template.md` 全文作为新 session 的第一条消息。
-- 执行依据：`docs/milestones/M1.md`（**已定稿**，状态 proposed，M0 收尾时撰写：事件词汇 +
-  JSONL 持久化 + resume + 崩溃恢复，任务拆解/TDD 顺序/验收/教程要求齐备）。
+- 执行依据：`docs/milestones/M2.md`（**已定稿**，状态 proposed，M1 收尾时撰写：LLM seam +
+  假 LLM + agent loop，任务拆解/TDD 顺序/验收/教程要求齐备）。
+
+## M1 完成快照（2026-08-16 增补）
+
+- **状态**：M1 已实现并通过验收（58 测试全绿、typecheck 绿、demo 三幕零 key 可跑、教程三个
+  练习实测通过——含 SIGKILL 真崩溃 + resume 自动补 `turn/end`）。状态指针已改 M2 待开始。
+- M1 落地物：`@mini-dsh/session`（五种词汇事件 + session/created 头记录、Session 桥接
+  append-only 日志、SessionPersistence seam + JSONL 后端、SessionManager create/resume/list、
+  崩溃恢复 repairDanglingTurn）、可复用 seam 契约测试套件（`tests/contracts/`）、演示
+  `roundtrip.ts` + 教程练习 `my-crash.ts`/`my-resume.ts`、教程 `docs/tutorials/M1-event-log.md`。
+- 过程中按 TDD 修掉两个真 bug：①并存会话串台（共享 EventsService，会话改用自有实例隔离）；
+  ②断尾契约从"末尾恰为 turn/start"修正为"有未配对的 turn/start"。关键决策已归档：
+  `implemented/architecture/2026-08-16-m1-session-日志决策.md`。
+- 与 spec 的偏差记录：示例脚本放 `packages/session/examples/`（沿用 M0 包内 examples 约定），
+  而非 spec 里的根级 `examples/`。
 
 ## M0 完成快照（2026-08-16 增补）
 
