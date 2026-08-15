@@ -14,6 +14,7 @@
     "cordis": "4.0.0-rc.8"
   },
   "devDependencies": {
+    "@mini-dsh/agent": "workspace:*",
     "@mini-dsh/client": "workspace:*",
     "@mini-dsh/llm": "workspace:*",
     "@mini-dsh/session": "workspace:*",
