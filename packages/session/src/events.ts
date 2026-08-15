@@ -21,15 +21,25 @@ declare module 'cordis' {
 }
 
 export interface TurnEndPayload {
-  reason: 'done' | 'user' | 'crash'
+  /** done=正常结束；user=被用户打断（预留）；crash=异常；limit=工具步数超限（M3）。 */
+  reason: 'done' | 'user' | 'crash' | 'limit'
 }
 
 export interface UserEventPayload {
   content: string
 }
 
+/** 工具调用（与 llm 包 ToolCall 结构相同；arguments 是已解析对象）。 */
+export interface ToolCallPayload {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+}
+
 export interface AssistantEventPayload {
   content: string
+  /** 模型请求的工具调用（M3 起：assistant 回复可能是"要工具"，纯文本时无此字段）。 */
+  toolCalls?: readonly ToolCallPayload[]
 }
 
 export interface ToolEventPayload {

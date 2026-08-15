@@ -71,6 +71,13 @@ export class Session {
       configurable: true,
     })
 
+    // 会话元信息的只读入口（M3）：loop 从它取工具执行用的 cwd（meta.cwd，旧会话缺省
+    // 由消费方兜底进程 cwd）。与 session-log 同款 defineProperty 遮蔽。
+    Object.defineProperty(ctx, 'session-meta', {
+      value: self.meta,
+      configurable: true,
+    })
+
     // 隔离：会话拥有自己的事件总线实例。子 ctx 沿原型链共享根 ctx 的 EventsService，
     // 若不隔离，同一 runtime 下多个并存会话会互相收到对方的 emit（桥接串台）。
     // ctx 代理不允许直接赋值（无 provide），用 defineProperty 定义自有属性覆盖继承来的实例。
@@ -134,5 +141,6 @@ export async function openSession(parent: Context, config: SessionConfig): Promi
 declare module 'cordis' {
   interface Context {
     'session-log': SessionLog
+    'session-meta': SessionMeta
   }
 }

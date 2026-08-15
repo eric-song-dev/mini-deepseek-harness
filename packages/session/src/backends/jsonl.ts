@@ -55,6 +55,7 @@ export function createJsonlPersistence(options: JsonlOptions = {}): SessionPersi
       id: `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       title: input.title ?? '',
       createdAt: Date.now(),
+      cwd: input.cwd ?? process.cwd(),
     }
     await mkdir(dir, { recursive: true })
     await writeFile(fileOf(meta.id), `${JSON.stringify(createHeaderEvent(meta))}\n`)

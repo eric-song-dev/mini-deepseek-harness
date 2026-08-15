@@ -11,11 +11,18 @@ export interface SessionMeta {
   title: string
   /** 创建时间（epoch 毫秒）。 */
   createdAt: number
+  /**
+   * 会话工作目录（M3）：工具按它解析相对路径；缺省后端补进程 cwd。
+   * 可选字段 = 兼容 M1/M2 的旧头记录（旧会话 resume 后由消费方兜底进程 cwd）。
+   */
+  cwd?: string
 }
 
-/** create 的输入：除 title 外都由后端补齐（id、createdAt）。 */
+/** create 的输入：除 title 外都由后端补齐（id、createdAt、cwd）。 */
 export interface CreateSessionInput {
   title?: string
+  /** 会话工作目录；省略时后端用进程 cwd。 */
+  cwd?: string
 }
 
 /**
