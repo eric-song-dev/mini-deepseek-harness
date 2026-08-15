@@ -1,0 +1,20 @@
+{
+  "name": "@mini-dsh/agent",
+  "version": "0.1.0",
+  "description": "agent loop：全仓唯一的“拿输入→调模型→写输出”具体循环逻辑，每个动作都落会话日志",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}
