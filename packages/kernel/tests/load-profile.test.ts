@@ -90,4 +90,18 @@ describe('startProfile', () => {
 
     expect(lifecycleEvents()).toEqual(['ready', 'stop', 'cleaned'])
   })
+
+  it('setup 钩子在 app/ready 之前对 ctx 执行（供挂载 logger 输出等）', async () => {
+    const { lifecycleEvents } = await import('./fixtures/plugins/lifecycle')
+    lifecycleEvents().length = 0
+
+    const running = await startProfile(profile('lifecycle'), {
+      setup: () => {
+        lifecycleEvents().push('setup')
+      },
+    })
+    await running.stop()
+
+    expect(lifecycleEvents()).toEqual(['setup', 'ready', 'stop', 'cleaned'])
+  })
 })
