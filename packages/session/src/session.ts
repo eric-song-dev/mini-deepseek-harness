@@ -1,4 +1,5 @@
 import type { Context, Events } from 'cordis'
+import { EventsService } from 'cordis'
 import { createHeaderEvent, SESSION_EVENT_NAMES } from './events'
 import type { SessionEvent, SessionEventType } from './events'
 import type { SessionMeta, SessionPersistence } from './persistence'
@@ -43,6 +44,11 @@ export class Session {
     const initial = config.events ?? [createHeaderEvent(config.meta)]
     this.events.push(...initial)
     this.nextSeq = (this.events.at(-1)?.seq ?? 0) + 1
+
+    // 隔离：会话拥有自己的事件总线实例。子 ctx 沿原型链共享根 ctx 的 EventsService，
+    // 若不隔离，同一 runtime 下多个并存会话会互相收到对方的 emit（桥接串台）。
+    // ctx 代理不允许直接赋值（无 provide），用 defineProperty 定义自有属性覆盖继承来的实例。
+    Object.defineProperty(ctx, 'events', { value: new EventsService(ctx), configurable: true })
 
     // 桥接监听器：会话 ctx 上的词汇事件 → append 日志。
     // ctx.on 注册的监听器是当前 fiber 的 effect，dispose 时自动摘除。
