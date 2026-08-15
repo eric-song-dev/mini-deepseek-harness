@@ -29,7 +29,6 @@ async function writeCrashedSession(id: string): Promise<void> {
     { seq: 1, type: 'session/created', ts: createdAt, payload: meta },
     { seq: 2, type: 'turn/start', ts: createdAt + 1 },
     { seq: 3, type: 'user', ts: createdAt + 2, payload: { content: '说到一半……' } },
-    { seq: 4, type: 'turn/start', ts: createdAt + 3 },
   ]
   await writeFile(join(dir, `${id}.jsonl`), lines.map((line) => JSON.stringify(line)).join('\n') + '\n')
 }
@@ -43,12 +42,12 @@ describe('崩溃恢复（M1 核心契约）', () => {
       const last = session.log.at(-1)!
       expect(last.type).toBe('turn/end')
       expect(last.payload).toEqual({ reason: 'crash' })
-      expect(last.seq).toBe(5)
+      expect(last.seq).toBe(4)
 
       // 补写的事件已持久化：直接读文件最后一行
       const onDisk = (await readFile(join(dir, 's-crash.jsonl'), 'utf8')).trim().split('\n')
       expect(JSON.parse(onDisk.at(-1)!)).toMatchObject({
-        seq: 5, type: 'turn/end', payload: { reason: 'crash' },
+        seq: 4, type: 'turn/end', payload: { reason: 'crash' },
       })
     } finally {
       await dispose()

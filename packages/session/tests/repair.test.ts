@@ -39,16 +39,35 @@ describe('repairDanglingTurn（纯函数：断尾检测 + 补 turn/end）', () =
     expect(result.events).toEqual([])
   })
 
-  it('断尾修复只认最后一条：末尾是 user 不补，末尾是 turn/start 才补', () => {
-    const danglingUser = [header, { seq: 2, type: 'user' as const, ts: 1001, payload: { content: 'x' } }]
-    expect(repairDanglingTurn(danglingUser).repaired).toBeNull()
-
-    const danglingTool = [header, { seq: 2, type: 'tool' as const, ts: 1001, payload: { name: 'bash', input: {} } }]
-    expect(repairDanglingTurn(danglingTool).repaired).toBeNull()
-
-    const danglingStart = [header, { seq: 2, type: 'turn/start' as const, ts: 1001, payload: undefined }]
-    expect(repairDanglingTurn(danglingStart).repaired).toMatchObject({
-      seq: 3, type: 'turn/end', payload: { reason: 'crash' },
+  it('断尾 = 有未配对的 turn/start：末尾是 user/tool 也补；正常闭合不补', () => {
+    // 崩溃现场最常见的样子：turn/start 之后进程被杀死，日志末尾可能是 user/tool
+    const midUser: SessionEvent[] = [
+      header,
+      { seq: 2, type: 'turn/start', ts: 1001, payload: undefined },
+      { seq: 3, type: 'user', ts: 1002, payload: { content: '说到一半……' } },
+    ]
+    expect(repairDanglingTurn(midUser).repaired).toMatchObject({
+      seq: 4, type: 'turn/end', payload: { reason: 'crash' },
     })
+
+    const midTool: SessionEvent[] = [
+      header,
+      { seq: 2, type: 'turn/start', ts: 1001, payload: undefined },
+      { seq: 3, type: 'tool', ts: 1002, payload: { name: 'bash', input: {} } },
+    ]
+    expect(repairDanglingTurn(midTool).repaired).toMatchObject({
+      seq: 4, type: 'turn/end', payload: { reason: 'crash' },
+    })
+
+    // 正常闭合：turn/start 后面有配对的 turn/end，不补
+    const closed: SessionEvent[] = [
+      header,
+      { seq: 2, type: 'turn/start', ts: 1001, payload: undefined },
+      { seq: 3, type: 'user', ts: 1002, payload: { content: 'x' } },
+      { seq: 4, type: 'turn/end', ts: 1003, payload: { reason: 'done' } },
+    ]
+    const result = repairDanglingTurn(closed)
+    expect(result.repaired).toBeNull()
+    expect(result.events).toBe(closed)
   })
 })
