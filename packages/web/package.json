@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@mini-dsh/test-support": "workspace:*",
-    "@types/ws": "^8.5.10"
+    "@types/ws": "^8.5.10",
+    "@mini-dsh/subagent": "workspace:*",
+    "@mini-dsh/workflow": "workspace:*"
   }
 }

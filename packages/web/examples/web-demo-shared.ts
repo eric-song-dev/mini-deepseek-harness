@@ -3,6 +3,8 @@ import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import { openAiLlm, provideLlm } from '@mini-dsh/llm'
 import type { OpenAiLlmOptions } from '@mini-dsh/llm'
 import { bashTool, toolRegistry } from '@mini-dsh/tools'
+import { forkProvider, spawnProvider, SubagentRuntime, toolSubagent } from '@mini-dsh/subagent'
+import { toolWorkflow, WorkflowEngine } from '@mini-dsh/workflow'
 import { createFakeLlm } from '@mini-dsh/test-support'
 import { datedSystemPrompt } from '@mini-dsh/agent'
 import { webHost } from '@mini-dsh/web'
@@ -14,6 +16,11 @@ import type { RpcBridge, WebHostHandle } from '@mini-dsh/web'
  * 这正是 LLM seam 的教学点：换 provider = 换提供 `llm` 服务的插件，host、loop、
  * 流式、轨迹一行不改。测试（tests/web-demo.test.ts）用真 adapter 指向本地
  * 假 HTTP 端点跑全链路，零 key 零外网。
+ *
+ * M8 起同时挂 subagent/workflow（host 侧插件，client 零改动）：`subagent`/`workflow`
+ * 就是 tools seam 里的普通工具，浏览器里的 tool 卡片、轨迹面板、会话列表都是现成
+ * UI——子会话经会话列表点选回放。fake 台词本第一轮就是一段委派场景（父派子 agent
+ * 跑 bash date → 子回答 → 父汇报），零 key 在浏览器里可见多智能体全程。
  */
 
 export type WebDemoLlmMode = 'fake' | 'real'
@@ -44,16 +51,37 @@ export interface WebDemoRuntime {
   stop: () => Promise<void>
 }
 
-/** 假 LLM 台词本（demo:web:fake 用：先工具往返，再流式固定台词，共 6 轮）。 */
+/** 假 LLM 台词本（demo:web:fake 用）：第一轮 = subagent 委派场景，其后 5 轮 bash 工具往返 + 流式台词。 */
 export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['replies'] {
-  const toolCallReply = {
+  // 第一轮：父 agent 调 subagent 工具派生子 agent（子 agent 再跑一次 bash date），
+  // 回收结果后父流式汇报——多智能体委派在浏览器里可见（tool 卡片 + 会话列表出现子会话）。
+  const delegationCall = {
+    toolCalls: [{
+      id: 'd1',
+      name: 'subagent',
+      arguments: { description: '问时间', prompt: '用 bash 执行 date，然后把结果念出来' },
+    }],
+  }
+  const childToolCall = {
+    toolCalls: [{ id: 'd2', name: 'bash', arguments: { command: "date '+%F %T %Z'" } }],
+  }
+  const childAnswer = {
+    chunks: ['bash 已经跑完了，', '工具结果我看过了。', '（我是子 agent，我的中间过程父 agent 看不到）'],
+    chunkDelay: 45,
+  }
+  const parentAnswer = {
+    chunks: ['子 agent 已经', '替我跑完了 date，', '它把时间汇报给了我。'],
+    chunkDelay: 45,
+  }
+  const bashCall = {
     toolCalls: [{ id: 'c1', name: 'bash', arguments: { command: 'echo 你好，我是工具卡片' } }],
   }
   const streamReply = {
     chunks: ['你好！', '我是迷你', ' DeepSeek Harness 的', '演示助手。', '（这段话是流式分片渲染的）'],
     chunkDelay: 45,
   }
-  return Array.from({ length: 6 }, () => [toolCallReply, streamReply]).flat()
+  return [delegationCall, childToolCall, childAnswer, parentAnswer,
+    ...Array.from({ length: 5 }, () => [bashCall, streamReply]).flat()]
 }
 
 /** 组装 web demo runtime：JSONL 后端 + SessionManager + bash 工具 + LLM（fake/real）+ webHost。 */
@@ -63,6 +91,14 @@ export async function createWebDemoRuntime(options: WebDemoRuntimeOptions): Prom
   await ctx.plugin(SessionManager)
   await ctx.plugin(toolRegistry)
   await ctx.plugin(bashTool)
+  // M8：多智能体编排（host 侧插件，client 零改动）。subagent/workflow 是 tools seam
+  // 里的普通工具：tool 卡片、轨迹面板、会话列表都是现成 UI，子会话独立落盘可回放。
+  await ctx.plugin(SubagentRuntime)
+  await ctx.plugin(spawnProvider)
+  await ctx.plugin(forkProvider)
+  await ctx.plugin(toolSubagent)
+  await ctx.plugin(WorkflowEngine)
+  await ctx.plugin(toolWorkflow)
 
   // LLM seam 的两种 provider：换一行 = 假变真（其余插件零改动）
   if (options.llm === 'real') {

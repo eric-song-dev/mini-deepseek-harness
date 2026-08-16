@@ -256,9 +256,15 @@ importers:
         specifier: ^8.18.0
         version: 8.21.3
     devDependencies:
+      '@mini-dsh/subagent':
+        specifier: workspace:*
+        version: link:../subagent
       '@mini-dsh/test-support':
         specifier: workspace:*
         version: link:../test-support
+      '@mini-dsh/workflow':
+        specifier: workspace:*
+        version: link:../workflow
       '@types/ws':
         specifier: ^8.5.10
         version: 8.18.1

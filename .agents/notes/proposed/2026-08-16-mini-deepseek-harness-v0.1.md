@@ -63,14 +63,15 @@
 
 ## M8 完成快照（2026-08-16 增补）
 
-- **状态**：M8 已实现并通过验收（全仓 375 测试全绿（node+jsdom 双 workspace，M8 新增
-  49：session 谱系/种子 5 + 持久化契约 2 + agent 透传 1 + subagents 契约 7 + HMR 1 +
+- **状态**：M8 已实现并通过验收（全仓 376 测试全绿（node+jsdom 双 workspace，M8 新增
+  50：session 谱系/种子 5 + 持久化契约 2 + agent 透传 1 + subagents 契约 7 + HMR 1 +
   提供方 7 + tool-subagent 6 + e2e 3 + workflow 引擎 8 + tool-workflow 6 + 教程练习 2
-  ——合计 49，其余为存量回归）、typecheck 全绿、`demo:subagent` 三幕零 key 实测
-  （委派回收/子会话独立回放/谱系 depth=1 → workflow 扇出 2 子会话 + 观察事件序列 +
-  返回值 [4,4] → fatal 终止 + 卸载后 tools/subagents 清空）、教程两个练习红绿翻转
-  逐一手动实测（my-subagent provider 名 spawn→fork 红→恢复绿；my-workflow
-  agentsStarted 1→2 红→恢复绿））。状态指针已改 M9 待开始，M8.md 置 implemented。
+  + web-demo-m8 委派场景 1 + 练习数归整后合计 50，其余为存量回归）、typecheck 全绿、
+  `demo:subagent` 三幕零 key 实测（委派回收/子会话独立回放/谱系 depth=1 → workflow
+  扇出 2 子会话 + 观察事件序列 + 返回值 [4,4] → fatal 终止 + 卸载后 tools/subagents
+  清空）、教程两个练习红绿翻转逐一手动实测（my-subagent provider 名 spawn→fork 红→
+  恢复绿；my-workflow agentsStarted 1→2 红→恢复绿））。状态指针已改 M9 待开始，
+  M8.md 置 implemented。
 - M8 落地物：`@mini-dsh/subagent`（SubagentRuntime 具名 provider 注册表 + 生命周期
   事件对 emit 在父会话 ctx + spawn/fork 进程内提供方（五步驱动器 + fork 平衡前缀种子）
   + tool-subagent（跟随 provider 生命周期、前台收集 + 部分输出保留））、
@@ -78,16 +79,24 @@
   事件容器化 + 取消覆盖）+ tool-workflow（description 即脚本契约全文））、
   session 谱系（SessionMeta.parentSessionId/depth + create({seed}) 平移持久化）、
   tools +ToolContext.agent（loop **一行**透传——全 M8 对 loop 的唯一改动）、
+  **Web 接入（定稿后修订，用户质询"你为啥这么做"）**：demo runtime
+  （`web-demo-shared`）挂 subagent/workflow host 插件（fake/real 双模式）、
+  fake 台词本第一轮 = subagent 委派场景（浏览器可见：tool 卡片 + 会话列表出现
+  子会话可点选回放）、client（bundle-web）零改动、回归 `web-demo-m8.test.ts`；
   教程 `docs/tutorials/M8-subagent-workflow.md` + 练习（my-subagent.test.ts、
   my-workflow.test.ts）。
 - spec 预拍板九条逐条核对落地（含实施修订：并发子 agent 共享假 LLM 的台词顺序竞态
   → 测试用相同回复解耦、workflow result.error 带 code 前缀、agentsStarted 只计被
-  接受的调用、tool-workflow 无 render 层故 maxResultChars 砍）。关键决策已归档：
+  接受的调用、tool-workflow 无 render 层故 maxResultChars 砍、决策 9 修订——初版
+  "bundle-web 不接"是把 draft"砍 UI 全量"扩大解释成"整个 Web 不接"，已纠正为
+  demo runtime 接入 + client 零改动，教训：砍 UI 插件 ≠ 砍能力接入，Web-first
+  项目的每个 M 要有浏览器可见验收路径）。关键决策已归档：
   `implemented/architecture/2026-08-16-m8-子代理-与-workflow-决策.md`
   （上游调研：`implemented/architecture/2026-08-16-m8-上游调研.md`）。
 - requirements 同步：头部 v0.5（M8 加入已完成列表）、§8 seams 表增 Subagents/
   WorkflowEngine 两行、§9 M8 行标注已完成；教程索引增 M8 行；根 README 增
-  demo:subagent 与两包行、状态段落更新；包 README 两个（教学导向）。
+  demo:subagent 与两包行、demo:web:fake 委派场景说明、状态段落更新；包 README
+  两个（教学导向）。
 
 ## M7 完成快照（2026-08-16 增补）
 

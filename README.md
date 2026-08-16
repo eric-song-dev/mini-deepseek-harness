@@ -18,7 +18,7 @@ pnpm demo:trajectory --clean  # M5 demo：轨迹回放 + skill 自举两幕（�
 pnpm demo:skills --clean      # M7 demo：技能目录 + 按 description 路由 + 调用策略（零 API key）
 pnpm demo:subagent --clean  # M8 demo：subagent 委派回收 + workflow 编排 + fatal/卸载（零 API key）
 pnpm demo:web --clean  # 浏览器对话用真模型（读 .env 的 key；系统提示自动注入当前时间）
-pnpm demo:web:fake --clean  # 零 key Web 演示：假 LLM 台词本（流式 + 工具卡片）
+pnpm demo:web:fake --clean  # 零 key Web 演示：假 LLM 台词本（第一轮 subagent 委派场景 + 流式 + 工具卡片）
 # 真 API 冒烟（唯一需要 key 的命令；key 放 .env 或环境变量 DEEPSEEK_API_KEY，其余全部零 key）：
 pnpm demo:real --ask "用一句话介绍你自己"
 ```
@@ -65,7 +65,8 @@ M5（Trajectory 简化视图 + skills 子系统，含 skill 自举）、M6（自
 契约 + fail-closed 校验 + code-review/prose-standard/trim-cot-leakage/pre-push-checks/
 doc-standards/archive-agent-notes 六个技能，`demo:skills` 零 key 验收）、M8（subagents
 seam + spawn/fork 进程内提供方 + `subagent` 工具 + WorkflowEngine 脚本编排 + `workflow`
-工具，loop 零专属改动，`demo:subagent` 零 key 验收）。
+工具，loop 零专属改动，`demo:subagent` 零 key 验收，`demo:web:fake` 第一轮为浏览器
+可见的委派场景）。
 **M9–M11 已排期（2026-08-16）**：M9 MCP → M10 plan/todo
 （**goal 先不做**）→ M11 web search 插件（可插拔机制已实现，M11 用其落地第一个外部
 HTTP 工具）。每个 M 开工先按 `docs/references/upstream.md` 的上游源码索引读上游文档

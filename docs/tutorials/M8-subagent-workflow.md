@@ -256,6 +256,19 @@ pnpm demo:subagent --clean
 （观察 phase/parallel/pipeline/agent 事件序列）；第三幕拼错选项 → fatal 终止 +
 卸载三插件 → 工具与提供方消失。
 
+### 在浏览器里测（Web 是 P0，M8 有浏览器验收路径）
+
+```sh
+pnpm demo:web:fake --clean
+```
+
+浏览器打开 → 「＋ 新建会话」→ 随便说一句话。**第一轮就是多智能体演示**：父 agent 调
+`subagent` 工具派生子 agent（tool 卡片实时弹出）→ 子 agent 自己跑 bash date → 子回答 →
+父流式汇报。**通过标准**：① 父会话里能看到 `subagent` 的 tool 卡片（调用/结果成对）；
+② **会话列表出现一个子会话**（title 是委派描述）；③ 点开子会话，轨迹面板能完整回放
+子 agent 自己的那一轮（含 bash 工具往返）。第 2 轮起回到 bash 工具卡片 + 流式台词。
+`demo:web`（真模型）挂的是同一套工具——模型真决定委派时，浏览器里看到的是同一条链路。
+
 ## 延伸思考
 
 - `workflow` 的脚本能再调用 `agent()`，子 agent 里又装着 `subagent` 工具——递归委派
