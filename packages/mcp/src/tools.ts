@@ -120,8 +120,8 @@ export async function syncTools(
           description: tool.description ?? '',
           parameters: tool.inputSchema ?? { type: 'object', properties: {} },
         },
-        // 执行闭包见 T5：rawName 只走 wire；此处先挂占位实现。
-        execute: async () => undefined,
+        // 执行闭包（T5）：rawName 只走 wire，公开名绝不外发。
+        execute: createExecutor(client, tool.name),
       })
     }
     cursor = response.nextCursor
@@ -139,4 +139,64 @@ export async function syncTools(
     throw error
   }
   return disposers
+}
+
+/**
+ * 为一个 MCP 工具造 execute 闭包：持有 (client, rawName)，把模型参数
+ * `tools/call` 到服务器，再把 MCP 内容块映射成 mini 工具输出。
+ *
+ * 语义（M9 spec 决策 3）：
+ * - rawName 只走 wire——公开名绝不发给服务器、绝不解析还原；
+ * - isError:true 是**结果**不是异常：返回 { isError: true, content } 让模型
+ *   看到失败原因自行纠正（与 bash 的 exit code、skill 的 { error } 同款纪律）；
+ * - 仅 transport 级失败（未连接等）throw——走 loop 的 turn/end(crash) 路径；
+ * - input 非对象（模型给了裸 JSON 值）兜底 {}，让服务器给出具体缺参错误。
+ */
+function createExecutor(
+  client: McpClientLike,
+  rawName: string,
+): (input: Record<string, unknown>) => Promise<unknown> {
+  return async (input) => {
+    const args = typeof input === 'object' && input !== null ? input : {}
+    const result = await client.callTool({ name: rawName, arguments: args })
+
+    // legacy 形状（SDK 兼容面）：没有 content 数组时按无输出处理。
+    if (!Array.isArray(result.content)) {
+      if (result.isError === true) return { isError: true, content: '(no output)' }
+      return { content: '(no output)' }
+    }
+
+    const text = extractText(result.content, rawName)
+    if (result.isError === true) return { isError: true, content: text }
+    return { content: text }
+  }
+}
+
+/**
+ * 把 MCP 内容块数组投影成单段文本：text 块以 '\n' 连接（上游教训：无分隔符
+ * join 会吞掉块间边界），image/audio/resource/未知块变占位符（上游同款文案）。
+ * 信任边界：字段按可选读——内容来自外部进程，声明必填的字段也可能缺失。
+ */
+function extractText(content: McpContentBlock[], rawName: string): string {
+  const parts: string[] = []
+  for (const block of content) {
+    switch (block.type) {
+      case 'text':
+        if (block.text !== undefined) parts.push(block.text)
+        break
+      case 'image':
+        parts.push(`[image: ${block.mimeType ?? 'unknown'}, content discarded]`)
+        break
+      case 'audio':
+        parts.push(`[audio: ${block.mimeType ?? 'unknown'}, content discarded]`)
+        break
+      case 'resource':
+      case 'resource_link':
+        parts.push('[resource: content discarded]')
+        break
+      default:
+        parts.push(`[unsupported content type: ${String(block.type)}]`)
+    }
+  }
+  return parts.join('\n') || `(${rawName} returned no text content)`
 }
