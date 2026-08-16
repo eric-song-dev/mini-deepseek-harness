@@ -47,10 +47,11 @@ function makeFakeProvider(overrides: Partial<SubagentResult> = {}): {
     name: 'fake',
     inheritsParentContext: false,
     async start(request) {
+      const index = runs.length
       const run: SubagentRun = {
-        id: `child-${runs.length + 1}`,
+        id: `child-${index + 1}`,
         result: Promise.resolve({ output: '假回答', stopReason: 'completed', ...overrides }),
-        dispose: async () => { disposed.push(runs.length) },
+        dispose: async () => { disposed.push(index) },
       }
       runs.push(run)
       return run
@@ -179,9 +180,9 @@ describe('tool-subagent（M8 任务 5）', () => {
       await loop.chat('帮我委派一个子任务')
       await session.flush()
 
-      // 模型调用顺序：父#1（要工具）→ 子#1（子任务）→ 父#2（继续对话）
+      // 模型调用顺序：父#1（要工具）→ 子#1（子任务）→ 父#2（继续对话，输入含工具结果）
       expect(fake.requests[1]!.messages).toEqual([{ role: 'user', content: '请算出答案' }])
-      expect(fake.requests[2]!.messages.at(-1)).toEqual({ role: 'user', content: '帮我委派一个子任务' })
+      expect(fake.requests[2]!.messages[0]).toEqual({ role: 'user', content: '帮我委派一个子任务' })
 
       // 父会话只多 tool 调用/结果事件对；结果 = 规范值 {kind, runId, output}
       const toolResult = session.log.find((e) => e.type === 'tool' && e.payload !== undefined && (e.payload as { output?: unknown }).output !== undefined)!

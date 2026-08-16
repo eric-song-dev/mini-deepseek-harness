@@ -9,6 +9,8 @@ export { SubagentError, SubagentRuntime } from './service'
 export type { SubagentsService, Unregister } from './service'
 export { completedTurnPrefix, forkProvider, spawnProvider, startInProcessRun } from './providers'
 export type { InProcessProviderConfig } from './providers'
+export { createSubagentTool, providerWording, stopReasonError, toolSubagent } from './tool'
+export type { ToolSubagentConfig } from './tool'
 export type {
   SubagentProvider,
   SubagentResult,
