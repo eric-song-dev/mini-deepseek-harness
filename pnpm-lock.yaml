@@ -171,6 +171,9 @@ importers:
       cordis:
         specifier: 4.0.0-rc.8
         version: 4.0.0-rc.8
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
     devDependencies:
       '@mini-dsh/agent':
         specifier: workspace:*

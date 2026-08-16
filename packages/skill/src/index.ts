@@ -1,7 +1,10 @@
 import './skills'
+import './frontmatter'
 
-export { createSkillsRegistry, provideSkills, UnknownSkillError } from './skills'
+export { createSkillsRegistry, provideSkills, InvalidSkillError, isSkillName, UnknownSkillError } from './skills'
 export type { Skill, SkillsService, Unregister } from './skills'
+export { parseFrontmatter, parseSkillFile } from './frontmatter'
+export type { ParsedFrontmatter, ParsedSkill } from './frontmatter'
 export { discoverSkills, skillsFromDirectory } from './fs-discovery'
 export type { SkillsFromDirectoryOptions } from './fs-discovery'
 export { createSkillTool, SKILL_TOOL_DECLARATION, skillTool } from './tool'
