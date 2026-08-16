@@ -61,6 +61,28 @@
   测试 `web-demo-real.test.ts` → `web-demo.test.ts`。所有活文档（根/包 README、
   M4/M5 教程、my-ws-client、M4/M5 spec 的命令引用）已同步；notes 历史记录不改。
 
+## M6 完成快照（2026-08-16 增补）
+
+- **状态**：M6 已实现并通过验收（全仓 288 测试全绿（node+jsdom 双 workspace，
+  typecheck 全绿）、四个教程练习红绿翻转逐一手动实测（错期望→红→改对→绿）、
+  卸载即撤销的端到端回归（卸载 bashTool 后 loop 模型可见面不含 bash））。
+  状态指针已改"M0–M6 全部完成 + backlog 排期"，M6.md 置 implemented。
+- M6 落地物：`@mini-dsh/tools` +`register`/`addHook` 返回幂等撤销函数 + 四工具
+  插件 ctx.effect、`@mini-dsh/skill` +撤销契约 + skillTool effect、`@mini-dsh/web`
+  +`handle` 撤销 + webHost 4 handler effect、`@mini-dsh/client` +slot 撤销 +
+  `registerSlot` 助手（slots.ts 保持框架无关）+ store.dispose + bridge close 幂等
+  清理 + ws open 监听器一次性、`@mini-dsh/session` +卸载 flush 排空（实证 cordis
+  会 await effect 清理的 Promise）、`@mini-dsh/agent` +loop 句柄随 fiber 摘除、
+  HMR-safety 测试组（六包各一组）+ 契约测试撤销语义 + 端到端回归、
+  教程 `docs/tutorials/M6-reversible-registrations.md` + 四个练习
+  （my-unload-tool / my-rpc-off / my-slot-off / my-interval）。
+- spec 预拍板七条逐条核对落地（含实施修订：session flush 用 ctx.effect 而非
+  dispose 事件——实证 cordis `_unload` await 全部 disposable；loop 句柄测试改
+  `getOwnPropertyDescriptor` 断言——fiber 死后 Proxy 直接访问抛 "without inject"）。
+  关键决策已归档：`implemented/architecture/2026-08-16-m6-注册可逆-决策.md`。
+- requirements 同步：§2 增硬约束 6"一切注册皆可逆"、§9 增 M6 行、教程表增 M6 行、
+  §8 增撤销说明、backlog #11 标注"前置已备（M6 注册可逆）"。
+
 ## M6 spec 定稿快照（2026-08-16 增补）
 
 - **状态**：M6 spec 已定稿（`docs/milestones/M6.md` 置 `proposed`），由用户指令启动。

@@ -51,8 +51,10 @@ pnpm demo:real --ask "用一句话介绍你自己"
 
 ## 状态
 
-MVP **全部完成**：M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 +
-JSONL 持久化 + resume + 崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）、M3（Tools seam +
-bash/fs 工具 + 工具调用循环）、M4（Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片）、
-M5（Trajectory 简化视图 + skills 子系统，含 skill 自举）。backlog 排期（CLI / 审批栈 /
-Trajectory v2 / 压轴教程等）见 `docs/requirements.md` §6 与 notes 状态指针。
+MVP（M0–M5）**全部完成**，M6（一切注册皆可逆）**已完成**：M0（脚手架 + test-support +
+cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 + resume + 崩溃恢复）、M2（LLM seam +
+假 LLM + agent loop）、M3（Tools seam + bash/fs 工具 + 工具调用循环）、M4（Web：RPC 桥 +
+会话列表 + composer + 流式 + tool 卡片）、M5（Trajectory 简化视图 + skills 子系统，含
+skill 自举）、M6（自有 seam 注册全部可撤销：注册即 effect + HMR-safety 测试组）。
+backlog 排期（CLI / 审批栈 / Trajectory v2 / 压轴教程等）见 `docs/requirements.md` §6
+与 notes 状态指针。

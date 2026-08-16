@@ -20,6 +20,10 @@
 3. **Session 事件日志是真源**：所有对话与工具活动都是 append-only `SessionEvent`，内存与持久化、UI 均从此投影。
 4. **Trajectory 是灵魂**：日志（真源）→ 投影 → 视图三件套缺一不可；chat 只是产生日志的来源之一。
 5. **可扩展性优先于功能完整**：每个能力 = 抽象服务 seam + 至少一个实现；未来原版功能以插件形式加入，不改 agent loop。
+6. **一切注册皆可逆**（M6 起）：自有 seam（tools/skills/RPC/slot）的注册返回幂等撤销函数，
+   注册方插件经 `ctx.effect` 挂接——插件卸载即撤销其全部注册（上游
+   "registrations are effects" 的落地）；每个注册表配 HMR-safety 测试
+   （dispose 注册方 fiber → 断言注册消失）。
 
 ## 3. 客户端范围
 
@@ -86,7 +90,8 @@
 8. compaction（上下文压缩）
 9. settings UI / 主题 token / i18n
 10. telemetry、session 搜索查询
-11. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后）
+11. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后；
+    **前置已备（M6 注册可逆）**：自有 seam 的注册全部可撤销 + HMR-safety 测试）
 12. **压轴教程**："给 mini 版写你的第一个插件" 综合实战篇 —— 每里程碑的入门教程属 P0 同步交付（§5.1），此项是收官的独立成章练习
 
 ## 7. 包布局
@@ -122,6 +127,10 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | Client `Slot` | UI 注册点 | 原版任意 ui-* 插件 |
 | 事件 | `session/*`、`agent/*` | telemetry、compaction、subagent |
 
+> M6 起（硬约束 6）：以上 seam 的注册 API（tools/skills 的 register、RPC 的 handle、
+> slot 的 register、订阅类 onEvent）一律返回幂等撤销函数，注册方插件经 `ctx.effect`
+> 挂接，卸载即撤销；每个注册表配 HMR-safety 测试（`tests/reversibility.test.ts` 等）。
+
 ## 9. 里程碑
 
 | 里程碑 | 内容 | 验收 |
@@ -132,6 +141,7 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | **M3** | tools（bash/fs）+ 工具调用循环 | 工具事件入日志，循环多步正确 |
 | **M4** | Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片 | 浏览器里完成一次真实对话 |
 | **M5** | Trajectory 简化视图 + skills 子系统 | 轨迹可回放 M4 的对话；`skill` 工具能加载 TDD skill |
+| **M6** | 一切注册皆可逆（注册即 effect） | 卸载任一注册插件后其注册项消失（工具/RPC 方法/slot/订阅/句柄），HMR-safety 测试组全绿 |
 
 每个里程碑：**有测试 + 可 demo + 有文档 + 有教程**（教程要求见 §5.1，随 M 同步交付）。
 
@@ -145,6 +155,7 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | M3 | `M3-tools` — 工具注册与执行：工具事件如何进轨迹 |
 | M4 | `M4-web` — host↔client 桥：流式消息怎么到浏览器 |
 | M5 | `M5-trajectory-and-skills` — 投影视图与 skills：灵魂的最后一环 |
+| M6 | `M6-reversible-registrations` — 注册与撤销：effect 生命周期、HMR-safety、订阅清理 |
 
 每个 M 的**详细执行 spec** 放 `docs/milestones/M<n>.md`（任务拆解、TDD 顺序、验收、教程要求、收尾动作），§9 只保留概览；进入某 M 时先定稿它的 spec 再编码。新 session 的启动 prompt 用固定模板：`docs/session-prompts/template.md`。
 

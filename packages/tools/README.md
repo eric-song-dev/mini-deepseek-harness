@@ -21,10 +21,10 @@ agent loop 只认 `ToolsService` 这套契约（注册表 + 执行管线），�
 
 ```ts
 interface ToolsService {
-  register(tool: Tool): void
+  register(tool: Tool): Unregister   // M6：返回幂等撤销函数
   get(name: string): Tool | undefined
   list(): ToolDeclaration[]          // loop 每步把它传给模型
-  addHook(phase: 'pre-execute' | 'post-execute', hook: ToolHook): void
+  addHook(phase: 'pre-execute' | 'post-execute', hook: ToolHook): Unregister
   execute(name: string, input, ctx: ToolContext): Promise<unknown>
 }
 ```
