@@ -1,10 +1,12 @@
 import { Context } from 'cordis'
+import { fileURLToPath } from 'node:url'
 import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import { openAiLlm, provideLlm } from '@mini-dsh/llm'
 import type { OpenAiLlmOptions } from '@mini-dsh/llm'
 import { bashTool, toolRegistry } from '@mini-dsh/tools'
 import { forkProvider, spawnProvider, SubagentRuntime, toolSubagent } from '@mini-dsh/subagent'
 import { toolWorkflow, WorkflowEngine } from '@mini-dsh/workflow'
+import { mcpClient } from '@mini-dsh/mcp'
 import { createFakeLlm } from '@mini-dsh/test-support'
 import { datedSystemPrompt } from '@mini-dsh/agent'
 import { webHost } from '@mini-dsh/web'
@@ -21,7 +23,14 @@ import type { RpcBridge, WebHostHandle } from '@mini-dsh/web'
  * 就是 tools seam 里的普通工具，浏览器里的 tool 卡片、轨迹面板、会话列表都是现成
  * UI——子会话经会话列表点选回放。fake 台词本第一轮就是一段委派场景（父派子 agent
  * 跑 bash date → 子回答 → 父汇报），零 key 在浏览器里可见多智能体全程。
+ *
+ * M9 起同时挂 mcp-client（fixture server）：外部 MCP server 的工具（mcp__fixture__*）
+ * 与本地工具同形态出现在浏览器 tool 卡片——能力接入零 client 改动；配置不在 Web
+ * （MCP 配置 UI 是裁剪项）。fake 台词本第二轮调 mcp__fixture__add（真协议真子进程）。
  */
+
+/** 与 web demo 同仓的玩具 MCP server（真 stdio 协议，零 key）。 */
+export const FIXTURE_SERVER_URL = new URL('../../mcp/examples/fixture-server.mjs', import.meta.url)
 
 export type WebDemoLlmMode = 'fake' | 'real'
 
@@ -73,6 +82,15 @@ export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['repli
     chunks: ['子 agent 已经', '替我跑完了 date，', '它把时间汇报给了我。'],
     chunkDelay: 45,
   }
+  // 第二轮：调外部 MCP server 的工具（真 stdio 协议 + 真子进程）——
+  // 浏览器 tool 卡片上出现 mcp__fixture__add，与本地工具同形态。
+  const mcpAddCall = {
+    toolCalls: [{ id: 'm1', name: 'mcp__fixture__add', arguments: { a: 2, b: 3 } }],
+  }
+  const mcpAnswer = {
+    chunks: ['刚才那个工具卡片', '是外部 MCP server 的 add：', '我调了它，2 + 3 = 5。'],
+    chunkDelay: 45,
+  }
   const bashCall = {
     toolCalls: [{ id: 'c1', name: 'bash', arguments: { command: 'echo 你好，我是工具卡片' } }],
   }
@@ -80,7 +98,7 @@ export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['repli
     chunks: ['你好！', '我是迷你', ' DeepSeek Harness 的', '演示助手。', '（这段话是流式分片渲染的）'],
     chunkDelay: 45,
   }
-  return [delegationCall, childToolCall, childAnswer, parentAnswer,
+  return [delegationCall, childToolCall, childAnswer, parentAnswer, mcpAddCall, mcpAnswer,
     ...Array.from({ length: 5 }, () => [bashCall, streamReply]).flat()]
 }
 
@@ -99,6 +117,14 @@ export async function createWebDemoRuntime(options: WebDemoRuntimeOptions): Prom
   await ctx.plugin(toolSubagent)
   await ctx.plugin(WorkflowEngine)
   await ctx.plugin(toolWorkflow)
+  // M9：外部工具协议——一行插件 + 一段配置 = 接入一个 stdio MCP server。其工具
+  // （mcp__fixture__*）与 bash/subagent 同形态进 tools 注册表，浏览器零改动。
+  await ctx.plugin(mcpClient, {
+    serverName: 'fixture',
+    transport: 'stdio',
+    command: process.execPath,
+    args: [fileURLToPath(FIXTURE_SERVER_URL)],
+  })
 
   // LLM seam 的两种 provider：换一行 = 假变真（其余插件零改动）
   if (options.llm === 'real') {

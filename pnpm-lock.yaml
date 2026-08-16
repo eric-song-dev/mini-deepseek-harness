@@ -287,6 +287,9 @@ importers:
         specifier: ^8.18.0
         version: 8.21.3
     devDependencies:
+      '@mini-dsh/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@mini-dsh/subagent':
         specifier: workspace:*
         version: link:../subagent

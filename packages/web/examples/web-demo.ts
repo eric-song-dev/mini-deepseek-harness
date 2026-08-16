@@ -74,6 +74,8 @@ async function main(): Promise<void> {
   console.log('→ M8 多智能体（模型可用 bash/subagent/workflow 工具）：')
   console.log('  试"请用 subagent 工具派一个子代理，让它用 bash 执行 date 和 pwd')
   console.log('  并汇报结果"——tool 卡片 + 会话列表出现子会话（点开可回放子轨迹）')
+  console.log('→ M9 外部 MCP 工具（mcp__fixture__* 已接入本演示）：')
+  console.log('  试"用 add 工具算 2+3"——外部 server 的工具卡片与本地工具同形态')
   console.log(`会话落盘：${sessionsDir}（Ctrl+C 退出）`)
   console.log('========================================')
 }

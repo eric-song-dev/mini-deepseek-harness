@@ -1,6 +1,7 @@
 /**
  * demo:web:fake：零 key 的 Web 体验 —— 假 LLM 台词本（第一轮 subagent 委派场景 +
- * bash 工具往返 + 流式最终回答）驱动真 HTTP+WS host + 浏览器页面。
+ * 第二轮外部 MCP 工具调用 + bash 工具往返 + 流式最终回答）驱动真 HTTP+WS host +
+ * 浏览器页面。
  *
  * runtime 组装已抽到 `web-demo-shared.ts`（与 demo:web 共用）——这里只负责
  * CLI 参数与启动横幅。想用真模型看 `pnpm demo:web`。
@@ -39,10 +40,11 @@ async function main(): Promise<void> {
 
   const { handle } = await createWebDemoRuntime({ llm: 'fake', port, sessionsDir, staticDir })
   console.log('========================================')
-  console.log(`mini-deepseek-harness M4/M8 演示已启动：${handle.url}`)
+  console.log(`mini-deepseek-harness M4/M8/M9 演示已启动：${handle.url}`)
   console.log('在浏览器打开 → 点「＋ 新建会话」→ 随便说一句话（比如：你好）')
   console.log('→ 第一轮：父 agent 调 subagent 工具派生子 agent（tool 卡片 + 会话列表出现子会话，')
   console.log('  点开子会话可看它的独立轨迹回放）')
+  console.log('→ 第二轮：调外部 MCP server 的 mcp__fixture__add（真 stdio 协议，tool 卡片可见）')
   console.log('→ 其后每轮：bash 工具卡片 + 流式消息逐字出现')
   console.log('（假 LLM 驱动，零 API key；想用真模型见 pnpm demo:web；Ctrl+C 退出）')
   console.log(`会话落盘：${sessionsDir}`)
