@@ -321,7 +321,8 @@ pnpm tsx packages/skill/examples/my-skill.ts
 ```
 
 打开 `packages/skill/examples/my-skill.ts`：把 `MY_SKILL_BODY` 改成你自己的技能
-（比如"回答必须押韵"），再跑一次。
+（比如"回答必须押韵"），再跑一次。（M7 起这个文件的 SKILL.md 带 frontmatter——
+`MY_SKILL_DESCRIPTION` 是目录里的路由标签，`MY_SKILL_BODY` 是正文。）
 **验收标准**：打印的"模型收到的全文"随你的改动而变化，且与磁盘文件一致。
 
 ### 练习 3：给轨迹面板改一个 slot 玩法

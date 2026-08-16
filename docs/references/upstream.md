@@ -2,7 +2,7 @@
 
 "参照 deepseek-ai/deepseek-harness" 的具体执行协议。**按下面的优先级查阅，不要凭印象写、不要全量读仓库。**
 
-> **M7 起（2026-08-16 增补）**：每个 M 开工时，先读本文件"## M7–M10 上游源码索引"里该 M 的**文档与代码**，把 seam 契约与裁剪结论记入 `.agents/notes/proposed/`，再定稿 `docs/milestones/M<n>.md` 的 spec。每个 M 的 spec 文件自带一份同源索引（定稿时以 spec 为准）。
+> **M7 起（2026-08-16 增补）**：每个 M 开工时，先读本文件"## M7–M11 上游源码索引"里该 M 的**文档与代码**，把 seam 契约与裁剪结论记入 `.agents/notes/proposed/`，再定稿 `docs/milestones/M<n>.md` 的 spec。每个 M 的 spec 文件自带一份同源索引（定稿时以 spec 为准）。
 
 ## 查阅优先级
 
@@ -26,7 +26,7 @@
 - 组合（bundle/profile）：`packages/bundle/{base,web-app}/`、`config/agent-presets/*/agent.cordis.yml`（本地安装）
 - CLI 客户端：`apps/cli/`（backlog 时再读）
 
-## M7–M10 上游源码索引（每 M 一份，开工前按序读）
+## M7–M11 上游源码索引（每 M 一份，开工前按序读）
 
 > 统一顺序：子系统文档 → 包 README(.zh) → 核心 src → 边界/反例文件。一次只读一个文件。
 
@@ -58,6 +58,16 @@
 - 接入点：`packages/core/tools/src/index.ts`（MCP 工具以原始 `ToolDefinition` 注册进 `ctx.tools` 的 ToolRuntime，之后自动流入现有执行管线）
 - 自动重连（**只读理解，mini 不照搬**）：`.agents/notes/implemented/feature/2026-08-06-mcp-client-auto-reconnect.zh.md`
 
+### M11 · web search（`ctx.web` 能力 seam）
+
+- 总纲：`docs/subsystems/web.zh.md`（三层拆分、选择语义、WebError 码表、seam 契约）
+- Service Definition：`packages/web/web/README.zh.md`（服务 API 表、选择表、词汇）
+- 消费方：`packages/web/tool-web/README.zh.md` + `src/search.ts`（`web_search` 工具：稳定注册、结果格式、提示词段、配置表）
+- 真提供方：`packages/web/web-search-deepseek/README.zh.md` + `src/{index,provider,types}.ts`（Anthropic 兼容端点、native web_search 工具、块解析映射、严格模式）
+- 工具编写约定：`docs/cookbook/adding-a-tool.zh.md`（execute 约定；mini 的 M3 已实现大部分）
+- 模型可见 schema：`docs/tool-catalog.zh.md` 的 `web_search` 段
+- 提供方对比（一眼即可）：`packages/web/web-search-perplexity/README.zh.md`、`web-search-exa/README.zh.md`
+
 ### M10 · plan / todo（goal 不做）
 
 - 总纲：`docs/subsystems/plan.zh.md`
@@ -73,4 +83,4 @@
 1. **照搬概念，不照搬代码**：原版规模远大于 mini，直接抄会失控；先读原版 README 的"Service / 配置 / 已知限制"章节，提取 seam 契约与命名，再在 mini 里写自己的实现。
 2. **一次只读一个文件**，读完立刻记录关键契约到本 M 的 notes；不要抓取整个仓库。
 3. 本地安装的 launcher 与上游源码可能版本不同步，冲突时以 ../deepseek-harness-upstream 为准（注意记录差异到 notes）。
-4. **M7–M10 开工协议**：定稿 spec 前**必须**按本文件对应索引读完上游文档与代码（顺序：子系统文档 → 包 README → 核心 src → 边界/反例），把"照搬哪些概念、砍掉哪些复杂度、mini seam 怎么挂接"记入 `.agents/notes/proposed/`；不读上游凭印象写 spec 视为违规（用户明确要求）。
+4. **M7–M11 开工协议**：定稿 spec 前**必须**按本文件对应索引读完上游文档与代码（顺序：子系统文档 → 包 README → 核心 src → 边界/反例），把"照搬哪些概念、砍掉哪些复杂度、mini seam 怎么挂接"记入 `.agents/notes/proposed/`；不读上游凭印象写 spec 视为违规（用户明确要求）。

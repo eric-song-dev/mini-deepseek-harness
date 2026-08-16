@@ -61,6 +61,33 @@
   测试 `web-demo-real.test.ts` → `web-demo.test.ts`。所有活文档（根/包 README、
   M4/M5 教程、my-ws-client、M4/M5 spec 的命令引用）已同步；notes 历史记录不改。
 
+## M7 完成快照（2026-08-16 增补）
+
+- **状态**：M7 已实现并通过验收（全仓 328 测试全绿（node+jsdom 双 workspace，M7 新增
+  frontmatter 契约 17 + fs-discovery 12 + tool 10 + 契约 11 + e2e 2 + 教程练习 2）、
+  typecheck 全绿、`demo:skills` 三幕零 key 实测（7 技能目录 / 按 description 路由 /
+  disable-model-invocation 不可加载）、教程两个练习红绿翻转逐一手动实测（删 description
+  看红 → 改回看绿；加 disable-model-invocation → 模型 get 失败 → 恢复））。
+  状态指针已改"M0–M7 全部完成 + M8–M11 排期"，M7.md 置 implemented。
+- M7 落地物：`@mini-dsh/skill` +`frontmatter.ts`（parseFrontmatter/parseSkillFile/
+  宽松布尔/legacy 键拒绝，`yaml` 依赖）+`Skill` 增 description/whenToUse/调用策略
+  （register 校验 + 默认规范化）+fs-discovery 用解析器（name 与目录名校验、坏条目
+  fail-closed 抛错带文件路径）+skill 工具目录（list {name,description} 只含
+  modelInvocable、截断 500；get 校验链 + 不可调用过滤）+`.agents/skills` 移植 6 技能
+  （code-review/prose-standard/trim-cot-leakage/pre-push-checks/doc-standards/
+  archive-agent-notes，含 references 附件）+`demo:skills` + 教程
+  `docs/tutorials/M7-upstream-skills.md` + 练习（my-frontmatter.test.ts、
+  my-skill.ts 升级）。
+- spec 预拍板七条逐条核对落地（yaml 包、fail-closed 抛错而非上游警告跳过、发现期
+  name 校验、消费方边界纪律、截断 500 在消费方、JSON wire 不引入 skill_content 包装、
+  移植 6 技能）。**上游互操作实证**：正在运行的 DeepSeek Harness 真实会话自动发现
+  本仓库 .agents/skills 的 7 个技能（description 原样展示）——格式与上游同构。
+  关键决策已归档：`implemented/architecture/2026-08-16-m7-技能移植-决策.md`
+  （上游调研：`implemented/architecture/2026-08-16-m7-上游调研.md`）。
+- requirements 同步：头部 v0.4（M7 加入已完成列表）、§9 M7 行标注已完成；
+  教程索引增 M7 行；根/包 README 同步；M5 教程练习 my-skill.ts 升级为 frontmatter
+  形态（原 M5 教程命令仍可复制即跑）。
+
 ## M6 完成快照（2026-08-16 增补）
 
 - **状态**：M6 已实现并通过验收（全仓 288 测试全绿（node+jsdom 双 workspace，

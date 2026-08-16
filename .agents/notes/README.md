@@ -32,15 +32,17 @@
 
 ## 当前状态指针
 
-- **M0–M6 全部完成，M7–M10 已排期（2026-08-16 用户拍板）** —— 下一个工作单元 =
-  **M7（原版 AI 技能移植）**：spec 为 draft（`docs/milestones/M7.md`），开工先按
-  `docs/references/upstream.md` 的 M7 索引读上游文档与代码、再定稿 spec、然后 TDD 实现。
-  排期：M7 技能移植 → M8 subagent/workflow → M9 MCP → M10 plan/todo（**goal 先不做**）；
+- **M0–M7 全部完成，M8–M11 已排期（2026-08-16 用户拍板）** —— 下一个工作单元 =
+  **M8（subagent/workflow 多智能体编排）**：spec 为 draft（`docs/milestones/M8.md`），
+  开工先按 `docs/references/upstream.md` 的 M8 索引读上游文档与代码、再定稿 spec、
+  然后 TDD 实现。
+  排期：M8 subagent/workflow → M9 MCP → M10 plan/todo（**goal 先不做**）→
+  M11 web search 插件（可插拔已实现，M11 用其落地第一个外部 HTTP 工具）；
   其余 backlog（CLI / 审批栈 / Trajectory v2 / SQLite / goal / LSP / compaction /
   settings-i18n / telemetry / 动态插件热加载（前置已备）/ 压轴教程）见
   `docs/requirements.md` §6。
 - 排期决策与上游调研摘要：`proposed/2026-08-16-m7-m10-排期.md`
-- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M6 完成快照）
+- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M7 完成快照）
 - M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - M1 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m1-session-日志决策.md`
 - M2 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m2-llm-与-loop-决策.md`
@@ -48,5 +50,7 @@
 - M4 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m4-web-决策.md`
 - M5 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m5-轨迹-与-skills-决策.md`
 - M6 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m6-注册可逆-决策.md`
-- 总纲：`docs/requirements.md`（v0.2：MVP 完成 + M7–M10 排期）
+- M7 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m7-技能移植-决策.md`
+  （上游调研：`implemented/architecture/2026-08-16-m7-上游调研.md`）
+- 总纲：`docs/requirements.md`（v0.4：MVP 完成 + M7 技能移植完成 + M8–M11 排期）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）

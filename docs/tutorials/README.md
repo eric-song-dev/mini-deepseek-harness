@@ -12,6 +12,7 @@
 | M4 | [M4-web.md](M4-web.md) | host↔client 桥：流式消息怎么到浏览器、Slot 怎么装配 UI |
 | M5 | [M5-trajectory-and-skills.md](M5-trajectory-and-skills.md) | 投影视图与 skills：轨迹灵魂的最后一环 |
 | M6 | [M6-reversible-registrations.md](M6-reversible-registrations.md) | 注册与撤销：effect 生命周期、HMR-safety、订阅清理 |
+| M7 | [M7-upstream-skills.md](M7-upstream-skills.md) | 原版技能体系：SKILL.md 格式契约、frontmatter 解析、fail-closed、mini 化改写 |
 
 每篇的验收标准（requirements §5.1"小白验收"）：**零 API key 可跟做**——练习全部由假 LLM / 测试
 脚手架驱动；教程中的命令与代码块复制即跑。
