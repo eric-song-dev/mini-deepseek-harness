@@ -194,6 +194,28 @@ importers:
         specifier: workspace:*
         version: link:../web
 
+  packages/subagent:
+    dependencies:
+      '@mini-dsh/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@mini-dsh/session':
+        specifier: workspace:*
+        version: link:../session
+      '@mini-dsh/tools':
+        specifier: workspace:*
+        version: link:../tools
+      cordis:
+        specifier: 4.0.0-rc.8
+        version: 4.0.0-rc.8
+    devDependencies:
+      '@mini-dsh/llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@mini-dsh/test-support':
+        specifier: workspace:*
+        version: link:../test-support
+
   packages/test-support:
     dependencies:
       cordis:

@@ -1,0 +1,22 @@
+{
+  "name": "@mini-dsh/subagent",
+  "version": "0.1.0",
+  "description": "Subagents seam（具名 provider 注册表）+ spawn/fork 进程内提供方 + subagent 委派工具",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/agent": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/tools": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}
