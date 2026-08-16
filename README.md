@@ -16,6 +16,7 @@ pnpm demo:agent    # M2 demo：agent loop 三幕（零 API key）
 pnpm demo:tools --clean  # M3 demo：假 LLM 台词本驱动真工具（读→改→总结，零 API key）
 pnpm demo:web --clean    # M4 demo：浏览器里完成一次"真实对话"（流式 + 工具卡片，零 API key）
 pnpm demo:trajectory --clean  # M5 demo：轨迹回放 + skill 自举两幕（零 API key）
+pnpm demo:web:real --clean  # 浏览器对话用真模型（读 .env 的 key；系统提示自动注入当前时间）
 # 真 API 冒烟（唯一需要 key 的命令；key 放 .env 或环境变量 DEEPSEEK_API_KEY，其余全部零 key）：
 pnpm demo:real --ask "用一句话介绍你自己"
 ```

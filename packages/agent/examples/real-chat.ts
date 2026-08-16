@@ -22,7 +22,7 @@ import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import type { SessionEvent } from '@mini-dsh/session'
 import { openAiLlm } from '@mini-dsh/llm'
 import { bashTool, editFileTool, readFileTool, toolRegistry, writeFileTool } from '@mini-dsh/tools'
-import { agentLoop } from '@mini-dsh/agent'
+import { agentLoop, datedSystemPrompt } from '@mini-dsh/agent'
 
 // ---- 极简 .env 加载（教学版不引 dotenv 依赖；已设置的环境变量优先）----
 const envFile = resolve('.env')
@@ -87,7 +87,8 @@ async function main(): Promise<void> {
   const manager = ctx.get('session-manager')!
   const session = await manager.create({ title: `真 API：${ask.slice(0, 20)}`, cwd: process.cwd() })
   const fiber = await session.ctx.plugin(agentLoop, {
-    systemPrompt: '你是 mini-deepseek-harness 的教学助手，回答简洁；需要时可以用工具。',
+    // 注入当前时间（post-MVP）：模型不知道"今天几号"的确定性兜底（工具仍可用，按需调用）
+    systemPrompt: datedSystemPrompt('你是 mini-deepseek-harness 的教学助手，回答简洁；需要时可以用工具。'),
   })
   const loop = fiber.ctx['agent-loop']
 

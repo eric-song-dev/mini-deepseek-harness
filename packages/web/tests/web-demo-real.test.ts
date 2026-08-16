@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AddressInfo } from 'node:net'
+import { WebSocket } from 'ws'
 import { projectTurns } from '@mini-dsh/session'
 import type { SessionEvent } from '@mini-dsh/session'
 import { createRpcBridge, memoryConnectionPair } from '@mini-dsh/web'
@@ -104,6 +105,39 @@ async function okResult(response: ResponseMessage): Promise<unknown> {
   return undefined
 }
 
+/** WS 版脚本化 client（浏览器同款通道：ws 包客户端 + 真升级握手）。 */
+function wsClient(url: string) {
+  const ws = new WebSocket(url)
+  const events: EventMessage[] = []
+  const pending = new Map<string, (message: ResponseMessage) => void>()
+  ws.on('message', (raw) => {
+    const message = JSON.parse(String(raw)) as HostMessage
+    if (message.kind === 'response') {
+      const resolve = pending.get(message.requestId)
+      if (resolve) {
+        pending.delete(message.requestId)
+        resolve(message)
+      }
+    }
+    if (message.kind === 'event') events.push(message)
+  })
+  let nextId = 0
+  const request = (method: string, params?: unknown): Promise<ResponseMessage> =>
+    new Promise((resolve, reject) => {
+      const requestId = `w-${++nextId}`
+      pending.set(requestId, resolve)
+      ws.once('error', reject)
+      ws.send(JSON.stringify({ kind: 'request', requestId, method, params }))
+      setTimeout(() => {
+        if (pending.has(requestId)) {
+          pending.delete(requestId)
+          resolve({ kind: 'response', requestId, ok: false, error: { name: 'TimeoutError', message: '等待响应超时' } })
+        }
+      }, 3000)
+    })
+  return { ws, request, events: () => events, close: () => ws.close() }
+}
+
 describe('demo:web:real 冒烟（post-MVP 增补：真 adapter 指向本地假端点，零 key）', () => {
   it('真 OpenAI 兼容 HTTP 链路：带当前日期的 system prompt → SSE 流式 → 会话事件 → 轨迹可投影', async () => {
     const stub = await startStubEndpoint()
@@ -168,6 +202,43 @@ describe('demo:web:real 冒烟（post-MVP 增补：真 adapter 指向本地假�
       expect(turns[0]!.endReason).toBe('done')
       const streamRow = turns[0]!.events.find((e) => e.type === 'assistant/stream')!
       expect(streamRow.payload).toEqual({ chunks: ['今年是', '2026年', '。'], joined: '今年是2026年。' })
+    } finally {
+      client?.close()
+      if (runtime) await runtime.stop()
+      await stub.close()
+      await rm(sessionsDir, { recursive: true, force: true })
+    }
+  })
+
+  it('不注入桥：webHost 自建 WS 升级路径，浏览器同款连接可用（回归：工厂曾恒传 bridge 导致 WS 失效）', async () => {
+    const stub = await startStubEndpoint()
+    const sessionsDir = await mkdtemp(join(tmpdir(), 'mini-dsh-web-real-ws-'))
+    let runtime: WebDemoRuntime | undefined
+    let client: ReturnType<typeof wsClient> | undefined
+    try {
+      runtime = await createWebDemoRuntime({
+        llm: 'real',
+        apiKey: 'test-key',
+        baseUrl: `http://127.0.0.1:${stub.port}`,
+        model: 'deepseek-chat',
+        port: 0,
+        sessionsDir,
+      })
+      // 真 WS 升级握手（ws 包客户端）：demo 不注入桥时这是浏览器唯一的实时通道
+      client = wsClient(`ws://127.0.0.1:${runtime.handle.port}`)
+      await new Promise<void>((resolve, reject) => {
+        client!.ws.once('open', resolve)
+        client!.ws.once('error', reject)
+      })
+
+      const created = (await okResult(await client.request('session.create', { title: 'WS 冒烟' }))) as {
+        meta: { id: string }
+      }
+      await okResult(await client.request('session.send', { id: created.meta.id, content: '你好' }))
+      expect(client.events().map((m) => m.event.type)).toEqual([
+        'turn/start', 'user', 'assistant/stream', 'assistant/stream', 'assistant/stream', 'assistant', 'turn/end',
+      ])
+      expect(stub.requests).toHaveLength(1)
     } finally {
       client?.close()
       if (runtime) await runtime.stop()

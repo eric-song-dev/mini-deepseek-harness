@@ -19,7 +19,8 @@
     "demo:trajectory": "tsx packages/agent/examples/trajectory-demo.ts",
     "demo:real": "tsx packages/agent/examples/real-chat.ts",
     "build:web": "pnpm --filter @mini-dsh/app-web build",
-    "demo:web": "pnpm build:web && tsx packages/web/examples/web-demo.ts"
+    "demo:web": "pnpm build:web && tsx packages/web/examples/web-demo.ts",
+    "demo:web:real": "pnpm build:web && tsx packages/web/examples/web-demo-real.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

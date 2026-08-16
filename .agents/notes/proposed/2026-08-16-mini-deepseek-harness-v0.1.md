@@ -36,6 +36,26 @@
   动态插件热加载（#11）/ 压轴教程"写你的第一个插件"（#12，收官独立项）。
 - 每个 backlog 项的启动方式同里程碑：先定稿 `docs/milestones/` 下的 spec 再编码。
 
+## post-MVP 增补（2026-08-16）：demo:web:real + 演示注入当前时间
+
+- **动机**：用户实测发现 ① `demo:web` 是假 LLM 台词本（无论发什么都是固定台词），
+  想用真模型只能跑终端的 `demo:real`；② `demo:real` 问"今年是哪一年"答"2025 年"——
+  模型训练知识截止且没有主动调 bash date。
+- **决策**：① web demo 的 runtime 抽成共享工厂 `packages/web/examples/web-demo-shared.ts`
+  （`llm: 'fake' | 'real'` 一行换 provider，host/loop/流式/轨迹零改动——LLM seam 教学点）；
+  新增 `pnpm demo:web:real`（读 .env key，`DEEPSEEK_BASE_URL` 可指向 Ollama/vLLM）。
+  ② agent 包新增 `datedSystemPrompt(base)`（post-MVP 功能代码，TDD 先行）：真演示的
+  system prompt 注入"当前时间（UTC）：ISO"，模型知道今天几号（工具仍可用，按需调用）。
+- **测试**：`packages/agent/tests/prompt.test.ts`（时间注入契约）；
+  `packages/web/tests/web-demo-real.test.ts` 冒烟 ×2：真 adapter 指向本地假 HTTP 端点
+  （零 key 零外网走真 HTTP+SSE 链路，断言 system prompt 带日期/流式分片/usage/轨迹投影）
+  + **WS 回归**（不注入桥时 webHost 自建 WS 升级路径——实施中抓到"工厂恒传 bridge 导致
+  浏览器连接失效"的真 bug，先实测复现再修、回归测试锁定）。
+- **实测**：`demo:real` 问年份 → "今年是 **2026年**"；`demo:web:real` 经脚本化 WS 客户端
+  真 API 链路 → 8 个流式分片拼接 == 终事件全文，回答 2026 年。
+- 未动：requirements/教程（本增补是 backlog 之外的即时修复，教程不强制同步；
+  如需可后续补"真 adapter Web 演示"小节）。
+
 ## M5 完成快照（2026-08-16 增补）
 
 - **状态**：M5 已实现并通过验收（全仓 261 测试全绿（node+jsdom 双 workspace，11 包
