@@ -89,6 +89,12 @@ export async function apply(ctx: Context, rawConfig: unknown): Promise<void> {
     disposers = new Map()
   }
 
+  // 子进程非零退出时 SDK 会额外给一个 onerror（McpError "Connection closed"）——
+  // 不接住会变成未处理异常。断开语义已由 onclose 承担，这里只记日志。
+  client.onerror = (error) => {
+    ctx.logger.warn('mcp-client(%s): 连接错误：%s', config.serverName, String(error))
+  }
+
   // list_changed → 重同步：两阶段同步保证失败时旧代原样（fetch 失败不碰注册表）。
   client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
     void (async () => {

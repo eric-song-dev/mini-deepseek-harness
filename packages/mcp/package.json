@@ -19,6 +19,7 @@
     "@mini-dsh/llm": "workspace:*",
     "@mini-dsh/session": "workspace:*",
     "@mini-dsh/test-support": "workspace:*",
-    "@modelcontextprotocol/server-filesystem": "^2026.7.10"
+    "@modelcontextprotocol/server-filesystem": "^2026.7.10",
+    "zod": "^4.4.3"
   }
 }

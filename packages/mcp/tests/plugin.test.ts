@@ -27,6 +27,7 @@ interface FakeClient {
   callToolResult: unknown
   closeCalls: number
   onclose: (() => void) | undefined
+  onerror: ((error: unknown) => void) | undefined
   listChangedHandler: (() => void) | undefined
   connect(): Promise<void>
   listTools(): Promise<unknown>
@@ -50,6 +51,7 @@ function makeFake(): FakeClient {
     callToolResult: { content: [{ type: 'text', text: 'ok' }] },
     closeCalls: 0,
     onclose: undefined,
+    onerror: undefined,
     listChangedHandler: undefined,
     connect: async () => { await fake.connectResult },
     listTools: async () => {
@@ -127,6 +129,8 @@ describe('mcp-client 插件生命周期', () => {
     })
     // env 覆盖在进程环境之上（mini 不做凭据 scrub——裁剪决定）
     expect((sdk.transportOptions[0] as { env: Record<string, string> }).env.PATH).toBe(process.env.PATH)
+    // onerror 被接住：子进程非零退出时 SDK 的 McpError 不能变成未处理异常
+    expect(lastClient().onerror).toBeDefined()
   })
 
   it('connect 失败 = 插件启动失败：apply reject 且连接被关闭（子进程不泄漏）', async () => {
