@@ -5,17 +5,28 @@ import { createSkillsRegistry, createSkillTool, provideSkills, skillTool } from 
 import type { SkillsService } from '@mini-dsh/skill'
 
 /**
- * skill 工具（M5）：模型按需检索技能的"文档检索"工具。
- * 语义（M5 spec 决策 5 + M3 工具语义"输出是内容，异常是结果"）：
- * - list → { skills } 技能名列表；get → { name, content } 技能全文——这是"内容"；
- * - 未知技能 / 坏参数 → { error } 作为结果返回（模型能看到失败原因并纠正，
- *   而不是把整轮炸掉）——这是"异常是结果"。
+ * skill 工具（M5：模型按需检索技能；M7 升级为目录展示）：
+ * - list → { skills: [{ name, description }] }——只含 modelInvocable 技能、
+ *   description 规范化（空白折叠）并截断 500（上游 catalogDescription）；
+ * - get → { name, description, content } 技能全文（frontmatter 已剥离）；
+ * - 消费方边界纪律（上游"get 是受信原语"）：modelInvocable: false 的技能
+ *   模型不可加载，get 返回 { error } 结果；
+ * - 语义（M5 spec 决策 5 + M3 工具语义"输出是内容，异常是结果"）：
+ *   正常路径返回内容；模型侧异常（未知技能、坏参数、不可调用）返回 { error }
+ *   结果——模型能看到失败原因并纠正，而不是把整轮炸掉。
  */
-describe('skill 工具（M5：模型按需取技能）', () => {
+describe('skill 工具（M7：目录展示 + 调用策略过滤）', () => {
   function makeSkills(): SkillsService {
     const skills = createSkillsRegistry()
-    skills.register({ name: 'tdd', content: '# TDD 纪律\n先写失败的测试。' })
-    skills.register({ name: 'notes', content: '# notes 工作流' })
+    skills.register({ name: 'tdd', description: '测试驱动开发纪律：先写失败的测试。', content: '# TDD 纪律\n先写失败的测试。' })
+    skills.register({ name: 'notes', description: '跨 session 记忆工作流', content: '# notes 工作流' })
+    skills.register({
+      name: 'translate',
+      description: '人工触发的双语翻译流程',
+      content: '# 翻译流程',
+      modelInvocable: false,
+      userInvocable: true,
+    })
     return skills
   }
 
@@ -33,17 +44,48 @@ describe('skill 工具（M5：模型按需取技能）', () => {
     })
   })
 
-  it('action=list → { skills: 已注册技能名 }（按注册顺序）', async () => {
+  it('action=list → { skills: [{name, description}] }，保持注册顺序，只含 modelInvocable 技能', async () => {
     const tool = createSkillTool(makeSkills())
-    expect(await tool.execute({ action: 'list' }, { cwd: '/' })).toEqual({ skills: ['tdd', 'notes'] })
+    expect(await tool.execute({ action: 'list' }, { cwd: '/' })).toEqual({
+      skills: [
+        { name: 'tdd', description: '测试驱动开发纪律：先写失败的测试。' },
+        { name: 'notes', description: '跨 session 记忆工作流' },
+      ],
+    })
   })
 
-  it('action=get → { name, content } 技能全文', async () => {
+  it('action=list：description 空白折叠并截断 500（超长补 …）', async () => {
+    const skills = createSkillsRegistry()
+    skills.register({ name: 'long', description: `多 段  空白${'很'.repeat(600)}`, content: 'x' })
+    const tool = createSkillTool(skills)
+    const output = (await tool.execute({ action: 'list' }, { cwd: '/' })) as { skills: Array<{ description: string }> }
+    const description = output.skills[0]!.description
+    expect(description).not.toMatch(/\s{2,}/)
+    expect(description.startsWith('多 段 空白')).toBe(true)
+    expect(description).toHaveLength(500)
+    expect(description.endsWith('...')).toBe(true)
+  })
+
+  it('action=get → { name, description, content } 技能全文', async () => {
     const tool = createSkillTool(makeSkills())
     expect(await tool.execute({ action: 'get', name: 'tdd' }, { cwd: '/' })).toEqual({
       name: 'tdd',
+      description: '测试驱动开发纪律：先写失败的测试。',
       content: '# TDD 纪律\n先写失败的测试。',
     })
+  })
+
+  it('action=get：modelInvocable:false 的技能模型不可加载 → { error } 结果（消费方边界纪律）', async () => {
+    const tool = createSkillTool(makeSkills())
+    const output = await tool.execute({ action: 'get', name: 'translate' }, { cwd: '/' })
+    expect(output).toEqual({ error: expect.stringContaining('not available for model invocation') })
+    expect(output).toMatchObject({ error: expect.stringContaining('translate') })
+  })
+
+  it('action=get：非 kebab 名 → { error } 结果（先校验名字形态，再查表）', async () => {
+    const tool = createSkillTool(makeSkills())
+    const output = await tool.execute({ action: 'get', name: 'Bad Name' }, { cwd: '/' })
+    expect(output).toMatchObject({ error: expect.stringContaining('invalid skill name') })
   })
 
   it('action=get 未知技能 → { error } 结果（异常是结果：模型能看到失败原因，不炸轮）', async () => {
@@ -75,6 +117,7 @@ describe('skill 工具（M5：模型按需取技能）', () => {
       expect(ctx.get('tools')!.list().map((d) => d.name)).toEqual(['skill'])
       expect(await tool!.execute({ action: 'get', name: 'notes' }, { cwd: '/' })).toEqual({
         name: 'notes',
+        description: '跨 session 记忆工作流',
         content: '# notes 工作流',
       })
     } finally {
