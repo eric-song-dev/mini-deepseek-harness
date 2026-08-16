@@ -110,6 +110,34 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
     }
   })
 
+  it('session.create 缺省 title → host 补默认标题（新会话 08-16 14:32 样式），列表项有名字', async () => {
+    const host = await makeHost()
+    try {
+      const result = (await okResult(await host.client.request('session.create'))) as {
+        meta: { title: string }
+        events: SessionEvent[]
+      }
+      expect(result.meta.title).toMatch(/^新会话 \d{2}-\d{2} \d{2}:\d{2}$/)
+      expect(result.events[0]!.payload).toMatchObject({ title: result.meta.title })
+      const list = (await okResult(await host.client.request('session.list'))) as Array<{ title: string }>
+      expect(list[0]!.title).toBe(result.meta.title)
+    } finally {
+      await host.dispose()
+    }
+  })
+
+  it('session.create 传空字符串 title 同样补默认标题', async () => {
+    const host = await makeHost()
+    try {
+      const result = (await okResult(await host.client.request('session.create', { title: '' }))) as {
+        meta: { title: string }
+      }
+      expect(result.meta.title).toMatch(/^新会话 \d{2}-\d{2} \d{2}:\d{2}$/)
+    } finally {
+      await host.dispose()
+    }
+  })
+
   it('session.create 返回 meta 与初始日志（含 session/created 头记录），且会话已常驻可立即 send', async () => {
     const host = await makeHost({ replies: [{ content: '你好呀' }] })
     try {

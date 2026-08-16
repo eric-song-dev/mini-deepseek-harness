@@ -127,6 +127,15 @@ describe('client UI 装配（jsdom，M4）', () => {
     expect(textOf('.dsh-extras [data-slot="my-panel"] .my-extra')).toBe('我是额外面板')
   })
 
+  it('新建会话后左侧列表项显示会话名字（缺省 title 不再空白）', async () => {
+    await makeUi({ replies: [{ content: '你好' }] })
+    click('.dsh-new-session')
+    await waitFor(() => document.querySelectorAll('.dsh-session-item').length === 1, '会话出现在列表')
+    const title = textOf('.dsh-session-item .dsh-session-title')
+    expect(title.length).toBeGreaterThan(0)
+    expect(title).toMatch(/^新会话/)
+  })
+
   it('完整对话流：新建会话 → 发消息 → 流式分片打字机 → 气泡封印 → tool 卡片出现', async () => {
     await makeUi({
       replies: [
