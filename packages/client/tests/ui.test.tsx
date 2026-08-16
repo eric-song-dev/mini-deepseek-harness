@@ -111,8 +111,58 @@ describe('client UI 装配（jsdom，M4）', () => {
   it('三个 slot 面板按装配位渲染（会话列表 / 对话区 / 工具区）', async () => {
     await makeUi({ replies: [{ content: '你好' }] })
     expect(document.querySelector('.dsh-area-list .dsh-new-session')).not.toBeNull()
-    expect(textOf('.dsh-area-chat .dsh-empty')).toContain('新建或选择一个会话')
+    // 无会话启动：chatbox 不渲染，中间是大的新建会话按钮
+    expect(document.querySelector('.dsh-area-chat .dsh-composer')).toBeNull()
+    expect(textOf('.dsh-area-chat .dsh-start-session')).toContain('新建会话')
+    expect(textOf('.dsh-area-list .dsh-session-empty')).toContain('还没有会话')
     expect(textOf('.dsh-area-tools .dsh-tool-empty')).toContain('还没有工具活动')
+  })
+
+  it('中间大按钮点一下即创建会话：composer 出现并自动聚焦输入框', async () => {
+    await makeUi({ replies: [{ content: '你好' }] })
+    click('.dsh-start-session')
+    await waitFor(() => document.querySelectorAll('.dsh-session-item').length === 1, '会话出现在列表')
+    expect(document.querySelector('.dsh-composer')).not.toBeNull()
+    await waitFor(() => document.activeElement === document.querySelector('.dsh-composer-input'), '输入框自动聚焦')
+  })
+
+  it('有会话但还没有消息时提示语友好（不再说"新建或选择一个会话"）', async () => {
+    await makeUi({ replies: [{ content: '你好' }] })
+    click('.dsh-start-session')
+    await waitFor(() => document.querySelector('.dsh-composer-input') !== null, 'composer 出现')
+    expect(textOf('.dsh-empty')).toContain('开始')
+    expect(textOf('.dsh-empty')).not.toContain('新建或选择')
+  })
+
+  it('新消息追加时消息区自动吸底；用户上翻阅读后不再吸底', async () => {
+    await makeUi({ replies: [{ content: '回答一' }, { content: '回答二' }] })
+    click('.dsh-start-session')
+    await waitFor(() => document.querySelector('.dsh-composer-input') !== null, 'composer 出现')
+
+    // jsdom 无布局引擎：接管 scrollHeight/scrollTop 观察吸底行为
+    const box = document.querySelector('.dsh-messages')!
+    let scrolled = -1
+    Object.defineProperty(box, 'scrollHeight', { get: () => 500, configurable: true })
+    Object.defineProperty(box, 'scrollTop', {
+      get: () => scrolled,
+      set: (value: number) => {
+        scrolled = value
+      },
+      configurable: true,
+    })
+
+    typeInto('.dsh-composer-input', '问题一')
+    click('.dsh-send')
+    await waitFor(() => textOf('.dsh-bubble.dsh-assistant') === '回答一', '回答一')
+    expect(scrolled).toBe(500)
+
+    // 用户上翻（远离底部）：后续消息不再打扰
+    scrolled = 0
+    box.dispatchEvent(new Event('scroll'))
+    typeInto('.dsh-composer-input', '问题二')
+    click('.dsh-send')
+    await waitFor(() => document.querySelectorAll('.dsh-bubble.dsh-assistant').length === 2, '回答二')
+    expect(scrolled).toBe(0)
   })
 
   it('未列入主布局的 slot 也会被装配进 extras 区：加 ui 插件不改 shell', async () => {
