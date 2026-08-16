@@ -61,6 +61,23 @@ function fakeProvider(name: string, overrides: Partial<SubagentResult> = {}): Su
   }
 }
 
+/** 可手动结算的提供方：start 发布后 result 悬着，测试能断言"只有 start、尚无 end"。 */
+function deferredProvider(name: string): { provider: SubagentProvider; resolve: (r: SubagentResult) => void } {
+  let resolveResult!: (r: SubagentResult) => void
+  const provider: SubagentProvider = {
+    name,
+    inheritsParentContext: false,
+    async start() {
+      return {
+        id: `child-${name}-1`,
+        result: new Promise<SubagentResult>((resolve) => { resolveResult = resolve }),
+        dispose: async () => {},
+      }
+    },
+  }
+  return { provider, resolve: (r) => resolveResult(r) }
+}
+
 /** 开一个父会话并把 subagent/* 事件收进数组（父会话隔离总线上的监听器）。 */
 async function openParent(ctx: Context): Promise<{ session: Session; seen: unknown[][] }> {
   const manager = ctx.get('session-manager')!
@@ -121,9 +138,10 @@ describe('Subagents seam 契约', () => {
       expect(removed).toEqual(['a'])
 
       const { session } = await openParent(ctx)
-      await expect(
-        ctx.subagents.start('a', { prompt: '任务', parent: session.ctx }),
-      ).rejects.toThrow(/NO_PROVIDER/)
+      const error = await ctx.subagents.start('a', { prompt: '任务', parent: session.ctx })
+        .then(() => null, (e: unknown) => e)
+      expect(error).toBeInstanceOf(SubagentError)
+      expect((error as SubagentError).code).toBe('NO_PROVIDER')
 
       // 同名可重注册
       ctx.subagents.registerProvider(fakeProvider('a'))
@@ -136,16 +154,22 @@ describe('Subagents seam 契约', () => {
   it('start 把请求转发给具名 provider；发布后 emit subagent/start（父会话 ctx 的隔离总线）', async () => {
     const { ctx, dispose } = await boot()
     try {
-      ctx.subagents.registerProvider(fakeProvider('spawn'))
+      const deferred = deferredProvider('spawn')
+      ctx.subagents.registerProvider(deferred.provider)
       const { session, seen } = await openParent(ctx)
 
       const run = await ctx.subagents.start('spawn', { label: '子任务', prompt: '请回答', parent: session.ctx })
       expect(run.id).toBe('child-spawn-1')
+      // 发布后立刻只有 start（result 还悬着，end 要等停稳）
       expect(seen).toHaveLength(1)
       expect(seen[0]).toEqual([{ runId: 'child-spawn-1', provider: 'spawn', id: 'child-spawn-1', local: true }])
 
       // 只观察不落父日志：父会话日志没有被 subagent/* 污染
       expect(session.log.filter((e) => e.type.startsWith('subagent/'))).toEqual([])
+
+      // 收尾：结算 result 让事件对闭合
+      deferred.resolve({ output: '回答', stopReason: 'completed' })
+      await run.result
     } finally {
       await dispose()
     }
@@ -154,10 +178,12 @@ describe('Subagents seam 契约', () => {
   it('result 停稳后 emit subagent/end（同 runId，带 stopReason 与最后输出）', async () => {
     const { ctx, dispose } = await boot()
     try {
-      ctx.subagents.registerProvider(fakeProvider('spawn'))
+      const deferred = deferredProvider('spawn')
+      ctx.subagents.registerProvider(deferred.provider)
       const { session, seen } = await openParent(ctx)
 
       const run = await ctx.subagents.start('spawn', { prompt: '请回答', parent: session.ctx })
+      deferred.resolve({ output: 'spawn 的回答', stopReason: 'completed' })
       const result = await run.result
       expect(result).toEqual({ output: 'spawn 的回答', stopReason: 'completed' })
       expect(seen).toHaveLength(2)

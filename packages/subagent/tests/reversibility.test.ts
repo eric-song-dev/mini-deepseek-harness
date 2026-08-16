@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Context } from 'cordis'
 import { createTestContext } from '@mini-dsh/test-support'
 import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
-import { SubagentRuntime } from '@mini-dsh/subagent'
+import { SubagentError, SubagentRuntime } from '@mini-dsh/subagent'
 import type { SubagentProvider } from '@mini-dsh/subagent'
 
 /**
@@ -65,9 +65,10 @@ describe('注册可逆（M8）：subagents provider 插件卸载即撤销', () =
       expect(ctx.subagents.list()).toEqual([])
       expect(removed).toEqual(['fake'])
       const session = await ctx.get('session-manager')!.create({ title: '父' })
-      await expect(
-        ctx.subagents.start('fake', { prompt: '任务', parent: session.ctx }),
-      ).rejects.toThrow(/NO_PROVIDER/)
+      const error = await ctx.subagents.start('fake', { prompt: '任务', parent: session.ctx })
+        .then(() => null, (e: unknown) => e)
+      expect(error).toBeInstanceOf(SubagentError)
+      expect((error as SubagentError).code).toBe('NO_PROVIDER')
     } finally {
       await dispose()
     }
