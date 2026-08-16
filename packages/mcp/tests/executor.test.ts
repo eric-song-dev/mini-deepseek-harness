@@ -12,7 +12,7 @@ import type { McpCallToolResult, McpClientLike } from '../src/tools'
 
 interface Call {
   name: string
-  arguments: Record<string, unknown>
+  arguments?: Record<string, unknown>
 }
 
 /** 按调用序依次返回预设结果的假 client。 */

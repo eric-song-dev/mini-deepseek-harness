@@ -32,17 +32,16 @@
 
 ## 当前状态指针
 
-- **M0–M8 全部完成，M9–M11 已排期（2026-08-16 用户拍板）** —— 下一个工作单元 =
-  **M9（MCP：外部工具协议接入）**：spec 为 draft（`docs/milestones/M9.md`），
-  开工先按 `docs/references/upstream.md` 的 M9 索引读上游文档与代码、再定稿 spec、
-  然后 TDD 实现。
-  排期：M9 MCP → M10 plan/todo（**goal 先不做**）→
-  M11 web search 插件（可插拔已实现，M11 用其落地第一个外部 HTTP 工具）；
-  其余 backlog（CLI / 审批栈 / Trajectory v2 / SQLite / goal / LSP / compaction /
-  settings-i18n / telemetry / 动态插件热加载（前置已备）/ 压轴教程）见
-  `docs/requirements.md` §6。
+- **M0–M9 全部完成，M10–M11 已排期（2026-08-16 用户拍板）** —— 下一个工作单元 =
+  **M10（plan / todo：原版任务系统）**：spec 为 draft（`docs/milestones/M10.md`），
+  开工先按 `docs/references/upstream.md` 的 M10 索引读上游文档与代码、再定稿 spec、
+  然后 TDD 实现（**goal 先不做**，留在 backlog）。
+  排期：M10 plan/todo（**goal 先不做**）→ M11 web search 插件（可插拔已实现，
+  M11 用其落地第一个外部 HTTP 工具）；其余 backlog（CLI / 审批栈 / Trajectory v2 /
+  SQLite / goal / LSP / compaction / settings-i18n / telemetry / 动态插件热加载
+  （前置已备）/ 压轴教程）见 `docs/requirements.md` §6。
 - 排期决策与上游调研摘要：`proposed/2026-08-16-m7-m10-排期.md`
-- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M8 完成快照）
+- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M9 完成快照）
 - M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - M1 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m1-session-日志决策.md`
 - M2 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m2-llm-与-loop-决策.md`
@@ -54,5 +53,7 @@
   （上游调研：`implemented/architecture/2026-08-16-m7-上游调研.md`）
 - M8 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m8-子代理-与-workflow-决策.md`
   （上游调研：`implemented/architecture/2026-08-16-m8-上游调研.md`）
-- 总纲：`docs/requirements.md`（v0.5：MVP 完成 + M6/M7/M8 完成 + M9–M11 排期）
+- M9 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m9-mcp-决策.md`
+  （上游调研：`implemented/architecture/2026-08-16-m9-上游调研.md`）
+- 总纲：`docs/requirements.md`（v0.6：MVP 完成 + M6/M7/M8/M9 完成 + M10/M11 排期）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）

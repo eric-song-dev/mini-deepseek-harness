@@ -13,7 +13,7 @@ import type { McpClientLike, McpListToolsResult, ToolDisposers } from '../src/to
 /** 可编程假 client：listTools 按排好的"页"依次返回；每页可是一次失败。 */
 function fakeClient(pages: Array<McpListToolsResult | Error>) {
   const listCalls: Array<{ cursor?: string }> = []
-  const callToolCalls: Array<{ name: string; arguments: Record<string, unknown> }> = []
+  const callToolCalls: Array<{ name: string; arguments?: Record<string, unknown> }> = []
   const client: McpClientLike = {
     async listTools(params) {
       listCalls.push(params)

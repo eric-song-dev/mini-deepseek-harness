@@ -259,6 +259,36 @@
 - 与 spec 的偏差记录：示例脚本放 `packages/session/examples/`（沿用 M0 包内 examples 约定），
   而非 spec 里的根级 `examples/`。
 
+## M9 完成快照（2026-08-16 增补）
+
+- **状态**：M9 已实现并通过验收（全仓 433 测试全绿（node+jsdom 双 workspace，M9 新增
+  57：mcp 包 56（config 11 + naming 6 + sync 9 + executor 8 + plugin 11 + e2e 10 +
+  教程练习 1）+ web-demo-m9 回归 1，其余为存量回归）、typecheck 全绿、`demo:mcp` 三幕零 key 实测（发现 mcp__fixture__*
+  → 假 LLM 台词本真调用 add(2,3)→5 全程入轨迹 → crash 断开即撤销 → dispose 重装恢复）、
+  e2e 真 stdio 双 server（仓库内 fixture 全场景 + 官方 server-filesystem write/read
+  往返互操作）、教程练习红绿翻转逐一手动实测（random_dice 改名 dice 红 → 改回绿）、
+  demo:web:fake 启动冒烟（M4/M8/M9 横幅 + 第二轮 MCP 工具卡片路径）。状态指针已改
+  M10 待开始，M9.md 置 implemented。
+- M9 落地物：`@mini-dsh/mcp`（mcp-client namespace 插件 inject:['tools']：config.ts
+  手写校验（拒绝未知字段）+ tools.ts（publicToolName / McpClientLike 窄接口 /
+  syncTools 两阶段 / executor 结果映射）+ index.ts（serverName 预留 WeakMap 按
+  ctx.root / 连接发现注册 / onclose 断开即撤销 / onerror 接住非零退出 / list_changed
+  重同步 / ctx.effect 可逆 dispose）、fixture-server.mjs（纯 JS 玩具 server，demo 与
+  e2e 共用）、mcp-demo.ts、SDK ^1.30.0 + zod/server-filesystem devDep、
+  教程 `docs/tutorials/M9-mcp.md` + 练习（my-dice-server.mjs / my-dice.test.ts）。
+- **Web 接入（M8 教训的应用）**：web-demo-shared 挂 mcpClient fixture 实例 + fake
+  台词本第二轮 = mcp__fixture__add 真调用（浏览器 tool 卡片可见，client 零改动），
+  回归 `web-demo-m9.test.ts`；MCP 配置 UI 仍砍。
+- spec 定稿十项决策逐条落地（含实施修订：SDK 1.30 通知 schema 改名
+  ToolListChangedNotificationSchema、exactOptionalPropertyTypes 下窄接口照收 SDK 的
+  undefined 联合、onerror 必接（实测不接住 = 未处理异常）、filesystem .bin shim 须
+  直接作 command（node 包一层会当 JS 解析））。关键决策已归档：
+  `implemented/architecture/2026-08-16-m9-mcp-决策.md`
+  （上游调研：`implemented/architecture/2026-08-16-m9-上游调研.md`）。
+- requirements 同步：头部 v0.6（M9 加入已完成列表）、§8 seams 表增 MCP 桥行、
+  §9 M9 行标注已完成；教程索引增 M9 行；根 README 增 demo:mcp 与包行、状态段落更新；
+  包 README（教学导向）。
+
 ## M9 spec 定稿快照（2026-08-16 增补）
 
 - **状态**：M9 spec 已定稿（`docs/milestones/M9.md` 置 `proposed`），按开工协议
