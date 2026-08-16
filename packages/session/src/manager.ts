@@ -1,6 +1,7 @@
 import { Context, Service } from 'cordis'
 import { openSession } from './session'
 import type { Session } from './session'
+import { createHeaderEvent } from './events'
 import { repairDanglingTurn } from './repair'
 import { SessionNotFoundError } from './persistence'
 import type { CreateSessionInput, SessionMeta, SessionPersistence } from './persistence'
@@ -28,8 +29,14 @@ export class SessionManager extends Service {
 
   /** 新建会话（落盘 + 返回可 emit 的 Session）。 */
   async create(input: CreateSessionInput = {}): Promise<Session> {
-    const meta = await this.persistence.create(input)
-    return openSession(this.ctx, { id: meta.id, meta, persistence: this.persistence })
+    // M8 fork 种子：子会话头记录占 seq 1，父前缀平移为 2..N+1（载荷/类型/ts 原样）。
+    // 平移在 manager 做（seq 语义归 session 包），后端只负责按原样写盘。
+    const seed = input.seed?.map((event, index) => ({ ...event, seq: index + 2 }))
+    const meta = seed === undefined
+      ? await this.persistence.create(input)
+      : await this.persistence.create({ ...input, seed })
+    const events = seed === undefined ? undefined : [createHeaderEvent(meta), ...seed]
+    return openSession(this.ctx, { id: meta.id, meta, persistence: this.persistence, ...(events === undefined ? {} : { events }) })
   }
 
   /** 重开会话：读回日志（含崩溃修复）并返回可继续追加的 Session；不存在抛 SessionNotFoundError。 */

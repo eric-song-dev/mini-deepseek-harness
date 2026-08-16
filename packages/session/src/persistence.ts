@@ -16,6 +16,16 @@ export interface SessionMeta {
    * 可选字段 = 兼容 M1/M2 的旧头记录（旧会话 resume 后由消费方兜底进程 cwd）。
    */
   cwd?: string
+  /**
+   * 谱系（M8）：派生本会话的父会话 id。subagent 子会话记"谁派生的我"；
+   * 缺省 = 顶层会话（人类用户开的）。只记账不设限。
+   */
+  parentSessionId?: string
+  /**
+   * 谱系（M8）：委派深度。顶层 = 缺省（视为 0），每层 subagent 委派 +1。
+   * 只记账不设限（上游 depthLimit 能力矩阵砍掉，见 M8 spec 决策 4）。
+   */
+  depth?: number
 }
 
 /** create 的输入：除 title 外都由后端补齐（id、createdAt、cwd）。 */
@@ -23,6 +33,17 @@ export interface CreateSessionInput {
   title?: string
   /** 会话工作目录；省略时后端用进程 cwd。 */
   cwd?: string
+  /** 谱系（M8）：派生本会话的父会话 id。 */
+  parentSessionId?: string
+  /** 谱系（M8）：委派深度。 */
+  depth?: number
+  /**
+   * fork 种子（M8）：父日志的"平衡已完成轮次前缀"（截至最后一个 turn/end 的
+   * **轮次事件**，不含父头记录 session/created——子会话自己的头记录占 seq 1）。
+   * manager 负责把 seq 平移（种子变 2..N+1）后交给后端；后端按原样追加在头记录之后。
+   * 省略 = spawn（空对话开始）。
+   */
+  seed?: readonly SessionEvent[]
 }
 
 /**

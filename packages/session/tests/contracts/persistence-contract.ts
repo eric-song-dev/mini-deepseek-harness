@@ -58,5 +58,28 @@ export function runPersistenceContract(make: () => SessionPersistence): void {
         persistence.append('no-such', { seq: 2, type: 'user', ts: 1, payload: {} }),
       ).rejects.toThrow(SessionNotFoundError)
     })
+
+    it('create 带谱系字段：meta 携带 parentSessionId/depth，locate 可取回', async () => {
+      const meta = await persistence.create({ title: '子会话', parentSessionId: 's-parent', depth: 2 })
+      expect(meta.parentSessionId).toBe('s-parent')
+      expect(meta.depth).toBe(2)
+      await expect(persistence.locate(meta.id)).resolves.toMatchObject({
+        parentSessionId: 's-parent',
+        depth: 2,
+      })
+    })
+
+    it('create 带 seed：后端按原样把种子写在头记录之后（seq 平移归 manager）', async () => {
+      const seed: SessionEvent[] = [
+        { seq: 2, type: 'user', ts: 10, payload: { content: '种子消息' } },
+        { seq: 3, type: 'turn/end', ts: 11, payload: { reason: 'done' } },
+      ]
+      const meta = await persistence.create({ title: 'fork 子会话', seed })
+      const loaded = await persistence.load(meta.id)
+      expect(loaded).toHaveLength(3)
+      expect(loaded[0]).toMatchObject({ seq: 1, type: 'session/created' })
+      expect(loaded[1]).toEqual(seed[0])
+      expect(loaded[2]).toEqual(seed[1])
+    })
   })
 }

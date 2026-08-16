@@ -56,9 +56,15 @@ export function createJsonlPersistence(options: JsonlOptions = {}): SessionPersi
       title: input.title ?? '',
       createdAt: Date.now(),
       cwd: input.cwd ?? process.cwd(),
+      ...(input.parentSessionId === undefined ? {} : { parentSessionId: input.parentSessionId }),
+      ...(input.depth === undefined ? {} : { depth: input.depth }),
     }
     await mkdir(dir, { recursive: true })
-    await writeFile(fileOf(meta.id), `${JSON.stringify(createHeaderEvent(meta))}\n`)
+    // M8：seed 是已平移好 seq 的事件前缀（manager 负责），后端只按原样写在头记录之后。
+    const lines = [createHeaderEvent(meta), ...(input.seed ?? [])]
+      .map((event) => JSON.stringify(event))
+      .join('\n')
+    await writeFile(fileOf(meta.id), `${lines}\n`)
     return meta
   }
 
