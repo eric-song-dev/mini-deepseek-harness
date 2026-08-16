@@ -1,17 +1,24 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from 'cordis'
-import { createSkillsRegistry } from './skills'
+import { parseSkillFile } from './frontmatter'
+import { createSkillsRegistry, InvalidSkillError } from './skills'
 import type { Skill } from './skills'
 
 /**
- * filesystem 发现后端（M5 spec 决策 4）：目录约定 `<dir>/<name>/SKILL.md` ——
- * 目录名即 skill 名，文件正文即内容。
+ * filesystem 发现后端（M5 建立；M7 升级为 frontmatter 契约）：目录约定
+ * `<dir>/<name>/SKILL.md`——目录名即 skill 名；SKILL.md 带 YAML frontmatter
+ * （`name` 必须与目录名一致、`description` 必填），content 只返回 frontmatter
+ * 之后的正文。
  *
  * 边界行为（契约，见 tests/fs-discovery.test.ts）：
  * - 目录不存在 → 空数组（graceful：没装 skill 的系统照常启动）；
  * - 路径是文件（坏目录）→ 报错（响亮地暴露配置错误）；
- * - 非目录项、没有 SKILL.md 的子目录跳过；结果按名排序（确定性）。
+ * - 非目录项、没有 SKILL.md 的子目录跳过；结果按名排序（确定性）；
+ * - 坏 frontmatter / name 与目录名不符 / 驼峰 legacy 键 → 抛 InvalidSkillError
+ *   并带文件路径（M7 fail-closed：坏条目响亮失败，绝不默认放行——与上游
+ *   "警告 + 跳过"的有意偏离：mini 是单根开发者自管仓库，坏 skill 与坏
+ *   profile 一样是配置错误）。
  */
 
 /** 扫描目录发现全部 skill（按名排序）。 */
@@ -28,17 +35,37 @@ export async function discoverSkills(dir: string): Promise<Skill[]> {
   for (const entry of [...entries].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     if (!entry.isDirectory()) continue
     const skillFile = join(dir, entry.name, 'SKILL.md')
-    let content: string
+    let raw: string
     try {
-      content = await readFile(skillFile, 'utf8')
+      raw = await readFile(skillFile, 'utf8')
     } catch (error) {
       // 子目录里没有 SKILL.md：不是 skill，跳过（读失败的其他原因原样上抛）
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue
       throw error
     }
-    skills.push({ name: entry.name, content })
+    skills.push(parseSkillAt(skillFile, raw, entry.name))
   }
   return skills
+}
+
+/** 解析一个 SKILL.md；格式违约抛 InvalidSkillError（消息带文件路径）。 */
+function parseSkillAt(skillFile: string, raw: string, dirName: string): Skill {
+  try {
+    const parsed = parseSkillFile(raw, dirName)
+    return {
+      name: parsed.name,
+      description: parsed.description,
+      content: parsed.content,
+      ...(parsed.whenToUse !== undefined ? { whenToUse: parsed.whenToUse } : {}),
+      modelInvocable: parsed.modelInvocable,
+      userInvocable: parsed.userInvocable,
+    }
+  } catch (error) {
+    if (error instanceof InvalidSkillError) {
+      throw new InvalidSkillError(`skill 文件 ${skillFile}：${error.message}`)
+    }
+    throw error
+  }
 }
 
 export interface SkillsFromDirectoryOptions {
