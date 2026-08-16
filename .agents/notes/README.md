@@ -32,13 +32,14 @@
 
 ## 当前状态指针
 
-- **M0–M6 全部完成** —— 需求 §5 的 10 项（MVP）与 §9 的 M6（一切注册皆可逆，
-  注册即 effect + HMR-safety 测试组）全部交付；下一个工作单元 = backlog 排期
-  （`docs/requirements.md` §6）：CLI（#1）/ 审批栈（#2）/ Trajectory v2（#3）/ SQLite
-  后端（#4）/ subagent（#5）/ MCP-LSP（#6）/ goal-plan-todo（#7）/ compaction（#8）/
-  settings-i18n（#9）/ telemetry（#10）/ 动态插件热加载（#11，**前置已备：M6 注册
-  可逆**）/ 压轴教程"写你的第一个插件"（#12，收官独立项）。backlog 项开工前同样
-  先定稿 `docs/milestones/` 下的 spec。
+- **M0–M6 全部完成，M7–M10 已排期（2026-08-16 用户拍板）** —— 下一个工作单元 =
+  **M7（原版 AI 技能移植）**：spec 为 draft（`docs/milestones/M7.md`），开工先按
+  `docs/references/upstream.md` 的 M7 索引读上游文档与代码、再定稿 spec、然后 TDD 实现。
+  排期：M7 技能移植 → M8 subagent/workflow → M9 MCP → M10 plan/todo（**goal 先不做**）；
+  其余 backlog（CLI / 审批栈 / Trajectory v2 / SQLite / goal / LSP / compaction /
+  settings-i18n / telemetry / 动态插件热加载（前置已备）/ 压轴教程）见
+  `docs/requirements.md` §6。
+- 排期决策与上游调研摘要：`proposed/2026-08-16-m7-m10-排期.md`
 - 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M6 完成快照）
 - M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - M1 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m1-session-日志决策.md`
@@ -47,5 +48,5 @@
 - M4 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m4-web-决策.md`
 - M5 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m5-轨迹-与-skills-决策.md`
 - M6 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m6-注册可逆-决策.md`
-- 总纲：`docs/requirements.md`（v0.1，需求已定稿）
+- 总纲：`docs/requirements.md`（v0.2：MVP 完成 + M7–M10 排期）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）

@@ -56,5 +56,8 @@ cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 + resume + 
 假 LLM + agent loop）、M3（Tools seam + bash/fs 工具 + 工具调用循环）、M4（Web：RPC 桥 +
 会话列表 + composer + 流式 + tool 卡片）、M5（Trajectory 简化视图 + skills 子系统，含
 skill 自举）、M6（自有 seam 注册全部可撤销：注册即 effect + HMR-safety 测试组）。
-backlog 排期（CLI / 审批栈 / Trajectory v2 / 压轴教程等）见 `docs/requirements.md` §6
-与 notes 状态指针。
+**M7–M10 已排期（2026-08-16）**：M7 原版 AI 技能移植 → M8 subagent/workflow → M9 MCP →
+M10 plan/todo（**goal 先不做**）。每个 M 开工先按 `docs/references/upstream.md` 的
+上游源码索引读上游文档与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M7–M10 已建
+draft 占位）。其余 backlog（CLI / 审批栈 / Trajectory v2 / 压轴教程等）见
+`docs/requirements.md` §6 与 notes 状态指针。

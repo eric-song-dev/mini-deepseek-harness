@@ -1,6 +1,7 @@
 # mini-deepseek-harness 需求文档
 
-> 版本：v0.1 · 2026-08-16 · 状态：需求已讨论定稿，待进入 M0 编码
+> 版本：v0.2 · 2026-08-16 · 状态：MVP（M0–M5）与 M6（注册可逆）已完成；M7–M10 已排期
+> （原版技能移植 → subagent/workflow → MCP → plan/todo，详见 §6/§9）
 > 上游参照：[deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（"Everything is a Plugin"，113k+ stars）
 
 ## 1. 项目定位
@@ -80,19 +81,33 @@
 
 ## 6. Backlog（按优先级）
 
+**M7–M10 排期已定（2026-08-16，用户拍板）**，按以下顺序推进，其余 backlog 项排在其后：
+
+| 里程碑 | 方向 | 与原 backlog 的对应 |
+|---|---|---|
+| **M7** | 原版 AI 技能移植：学习上游 `.agents/skills` / `.claude/skills` / preset skills 的 SKILL.md 格式与发现约定，把合适的一批上游技能 copy/改写成 mini 版（落 `<mini>/.agents/skills/`） | 新排期项（M5 已做 skill 子系统，本 M 补"原版技能内容 + 格式约定"） |
+| **M8** | subagent / workflow（多智能体编排） | 原 backlog #5 |
+| **M9** | MCP（外部工具协议接入） | 原 backlog #6 的 MCP 部分；**LSP 继续留在 backlog** |
+| **M10** | plan / todo（原版任务系统） | 原 backlog #7 的 plan/todo 部分；**goal 先不做**，留在 backlog |
+
+**M7–M10 开工协议（每个 M 都一样）**：新 session 先读 `docs/references/upstream.md`
+里该 M 的**上游源码索引（文档 + 代码）**——照搬概念不照搬代码、一次只读一个文件
+（§12）——再定稿 `docs/milestones/M<n>.md` 的 spec，然后才开始 mini 版开发。
+
+其余 backlog（M7–M10 之后按优先级）：
+
 1. **CLI 客户端**（用户明确指定）：interactive TUI + headless 双模式
 2. 审批/权限栈（bash approval；MVP 已留 hook）
 3. Trajectory v2：虚拟滚动 + 时间线概览（贴近原版 [ui-trajectory](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-trajectory/README.zh.md)）
 4. SQLite 持久化后端（演示 seam 换后端）
-5. subagent / workflow（多智能体编排）
-6. MCP、LSP
-7. goal / plan / todo（原版任务系统）
-8. compaction（上下文压缩）
-9. settings UI / 主题 token / i18n
-10. telemetry、session 搜索查询
-11. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后；
+5. goal（原版任务系统的第三件；M10 只交付 plan/todo）
+6. LSP（M9 只交付 MCP）
+7. compaction（上下文压缩）
+8. settings UI / 主题 token / i18n
+9. telemetry、session 搜索查询
+10. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后；
     **前置已备（M6 注册可逆）**：自有 seam 的注册全部可撤销 + HMR-safety 测试）
-12. **压轴教程**："给 mini 版写你的第一个插件" 综合实战篇 —— 每里程碑的入门教程属 P0 同步交付（§5.1），此项是收官的独立成章练习
+11. **压轴教程**："给 mini 版写你的第一个插件" 综合实战篇 —— 每里程碑的入门教程属 P0 同步交付（§5.1），此项是收官的独立成章练习
 
 ## 7. 包布局
 
@@ -142,6 +157,10 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | **M4** | Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片 | 浏览器里完成一次真实对话 |
 | **M5** | Trajectory 简化视图 + skills 子系统 | 轨迹可回放 M4 的对话；`skill` 工具能加载 TDD skill |
 | **M6** | 一切注册皆可逆（注册即 effect） | 卸载任一注册插件后其注册项消失（工具/RPC 方法/slot/订阅/句柄），HMR-safety 测试组全绿 |
+| **M7** | 原版 AI 技能移植：学习上游 `.agents/.claude` 技能体系（SKILL.md 格式 + 发现约定），把合适的一批上游技能 copy/改写成 mini 版 | `skill` 工具可列出并加载全部移植技能；移植技能在本仓库真实可用（零 key 验收） |
+| **M8** | subagent / workflow：多智能体编排最小集（in-process subagent 服务 + tool-subagent；workflow 最小 pipeline） | 父 agent 派生子代理完成子任务并回收结果，全链路入轨迹、注册可逆 |
+| **M9** | MCP：mcp-client seam + stdio transport + 外部 MCP server 的工具注册进 Tools 注册表 | 连上一个真 MCP server 后其工具可被模型调用；断开即撤销 |
+| **M10** | plan / todo：plan 布尔模式开关（`plan/mode` 事件 + `planMode` 服务 + `plan:policy` 段）+ todo 服务 + `todo_write` 工具 + Web 最小展示（**goal 不做**） | 模型用 plan/todo 工具规划并跟踪任务，plan/todo 事件入日志可回放 |
 
 每个里程碑：**有测试 + 可 demo + 有文档 + 有教程**（教程要求见 §5.1，随 M 同步交付）。
 
@@ -156,6 +175,10 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | M4 | `M4-web` — host↔client 桥：流式消息怎么到浏览器 |
 | M5 | `M5-trajectory-and-skills` — 投影视图与 skills：灵魂的最后一环 |
 | M6 | `M6-reversible-registrations` — 注册与撤销：effect 生命周期、HMR-safety、订阅清理 |
+| M7 | `M7-upstream-skills` — 学习原版技能体系：SKILL.md 格式、发现约定、mini 化改写 |
+| M8 | `M8-subagent-workflow` — 多智能体：子代理怎么派生、结果怎么回收、workflow 怎么编排 |
+| M9 | `M9-mcp` — 外部工具协议：MCP server 的工具怎么变成本地 Tools 注册表的一员 |
+| M10 | `M10-plan-todo` — 任务系统：plan/todo 数据模型、工具与事件回放 |
 
 每个 M 的**详细执行 spec** 放 `docs/milestones/M<n>.md`（任务拆解、TDD 顺序、验收、教程要求、收尾动作），§9 只保留概览；进入某 M 时先定稿它的 spec 再编码。新 session 的启动 prompt 用固定模板：`docs/session-prompts/template.md`。
 
