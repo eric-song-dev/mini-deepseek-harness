@@ -276,7 +276,7 @@ token 用量属于"这次 assistant 回复"的属性，放在载荷里最自然�
 ## 5. 小白看这份代码，按什么顺序读
 
 **第 0 步（先跑再说）**：`pnpm demo:trajectory --clean`，看两幕输出（轨迹回放 +
-skill 自举）；再 `pnpm demo:web` 在浏览器发一轮消息，点底部「轨迹」面板的轮行
+skill 自举）；再 `pnpm demo:web:fake` 在浏览器发一轮消息，点底部「轨迹」面板的轮行
 与事件行。带着"这些数据从哪来"的问题读码。
 
 **第 1 步，投影**：`packages/session/src/turns.ts`（约 150 行）。先读类型
@@ -306,7 +306,7 @@ SKILL.md 全文）与 `packages/client/tests/trajectory.test.tsx`（真 host + j
 
 ```bash
 pnpm demo:trajectory --clean   # 终端：两幕全流程
-pnpm demo:web                  # 浏览器：http://127.0.0.1:8127
+pnpm demo:web:fake             # 浏览器：http://127.0.0.1:8080（零 key 假 LLM 台词本）
 ```
 
 浏览器里新建会话 → 发一条消息 → 等轮次结束 → 看底部**轨迹面板**：

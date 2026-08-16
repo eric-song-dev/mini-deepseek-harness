@@ -282,7 +282,7 @@ M4 的桥是**教学迷你版**：明文 ws、无鉴权、事件推给所有 cli
 
 ## 5. 小白看这份代码，按什么顺序读
 
-**第 0 步（先跑再说）**：`pnpm demo:web`，浏览器点一遍（见练习 1）。带着"这些界面
+**第 0 步（先跑再说）**：`pnpm demo:web:fake`，浏览器点一遍（见练习 1）。带着"这些界面
 从哪来"的问题读码，效果最好。
 
 **第 1 步，协议**：`packages/web/src/protocol.ts`（约 60 行）。三种消息——
@@ -318,7 +318,7 @@ requestId 配对与错误应答的全部逻辑。`memoryConnectionPair` 是测�
 ### 步骤 1：起 demo，在浏览器完成一次"真实对话"（小白验收核心）
 
 ```bash
-pnpm demo:web --clean
+pnpm demo:web:fake --clean
 ```
 
 浏览器打开打印出的地址（默认 http://127.0.0.1:8080）：
@@ -335,8 +335,8 @@ pnpm demo:web --clean
 
 ### 步骤 2：改"打字机"速度，看分片怎么流
 
-打开 `packages/web/examples/web-demo.ts`，找到 `chunkDelay: 45` 改成 `chunkDelay: 300`，
-或把 `chunks` 数组删掉一个元素。重启 `pnpm demo:web`，再聊一句：
+打开 `packages/web/examples/web-demo-shared.ts`，找到 `chunkDelay: 45` 改成 `chunkDelay: 300`，
+或把 `chunks` 数组删掉一个元素。重启 `pnpm demo:web:fake`，再聊一句：
 
 - chunkDelay 变大 → 打字机变慢（每片间隔变长）；
 - 少一个分片 → 最终全文变短（分片拼接 == assistant 全文）。
@@ -361,13 +361,13 @@ pnpm vitest run packages/client/tests/my-first-slot.test.tsx
 
 ```bash
 # 终端 1
-pnpm demo:web
+pnpm demo:web:fake
 # 终端 2
 pnpm tsx packages/web/examples/my-ws-client.ts
 ```
 
 脚本用 `ws` 包连上真 host：新建会话 → 发消息 → 收集事件 → 断言序列与 demo 台词本
-完全一致。然后做红绿翻转：改 `web-demo.ts` 的台词本（比如删一个分片），重启 demo，
+完全一致。然后做红绿翻转：改 `web-demo-shared.ts` 的台词本（比如删一个分片），重启 demo，
 再跑脚本——断言变红；把 `EXPECTED_TYPES` 跟着改对，回绿。
 
 **验收标准**：你能说出脚本断言的 12 条事件分别对应 demo 台词本的哪个部分
@@ -423,6 +423,6 @@ M4 之后，"轨迹原料"端到端流动起来：
 
 | 文件 | 用途 |
 |---|---|
-| `packages/web/examples/web-demo.ts` | demo 台词本（练习 2 改这里） |
+| `packages/web/examples/web-demo-shared.ts` | demo 台词本（练习 2 改这里） |
 | `packages/client/tests/my-first-slot.test.tsx` | Slot 插件练习（练习 3） |
 | `packages/web/examples/my-ws-client.ts` | 脚本化客户端（练习 4） |

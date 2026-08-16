@@ -42,5 +42,5 @@ pnpm vitest run --project dom   # jsdom workspace（与 node 侧分开跑，互�
 
 `tests/ui.test.tsx` 用**真 host（内存桥）+ 假 LLM + jsdom 渲染**跑完整对话流：
 新建会话 → 发消息 → 流式气泡 → tool 卡片——这是"浏览器里完成一次真实对话"的自动化替身
-（人工浏览器验收交给 `pnpm demo:web` 与教程练习）。
+（人工浏览器验收交给 `pnpm demo:web:fake`（零 key）与教程练习）。
 `tests/trajectory.test.tsx`（M5）同款链路跑轨迹回放：轮表/事件明细/检查器/token 兜底。

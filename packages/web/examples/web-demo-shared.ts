@@ -9,10 +9,10 @@ import { webHost } from '@mini-dsh/web'
 import type { RpcBridge, WebHostHandle } from '@mini-dsh/web'
 
 /**
- * web demo 的共享 runtime（post-MVP 增补）：demo:web（假 LLM 台词本）与
- * demo:web:real（真 OpenAI 兼容 adapter）**只有一行区别**——`llm: 'fake' | 'real'`。
+ * web demo 的共享 runtime（post-MVP 增补）：demo:web（真 OpenAI 兼容 adapter）与
+ * demo:web:fake（假 LLM 台词本）**只有一行区别**——`llm: 'fake' | 'real'`。
  * 这正是 LLM seam 的教学点：换 provider = 换提供 `llm` 服务的插件，host、loop、
- * 流式、轨迹一行不改。测试（tests/web-demo-real.test.ts）用真 adapter 指向本地
+ * 流式、轨迹一行不改。测试（tests/web-demo.test.ts）用真 adapter 指向本地
  * 假 HTTP 端点跑全链路，零 key 零外网。
  */
 
@@ -44,7 +44,7 @@ export interface WebDemoRuntime {
   stop: () => Promise<void>
 }
 
-/** 假 LLM 台词本（与 M4 web-demo 同款：先工具往返，再流式固定台词，共 6 轮）。 */
+/** 假 LLM 台词本（demo:web:fake 用：先工具往返，再流式固定台词，共 6 轮）。 */
 export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['replies'] {
   const toolCallReply = {
     toolCalls: [{ id: 'c1', name: 'bash', arguments: { command: 'echo 你好，我是工具卡片' } }],

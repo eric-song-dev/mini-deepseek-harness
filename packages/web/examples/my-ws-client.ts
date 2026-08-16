@@ -2,12 +2,12 @@
  * M4 教程练习（进阶）：脚本化客户端——不点浏览器，用代码完成一次"真实对话"并断言事件序列。
  *
  * 用法（两个终端）：
- *   终端 1：pnpm demo:web            # 起真 host（假 LLM 台词本）
+ *   终端 1：pnpm demo:web:fake       # 起真 host（假 LLM 台词本，零 key）
  *   终端 2：pnpm tsx packages/web/examples/my-ws-client.ts
  * 可选参数：--url ws://127.0.0.1:8080
  *
- * 玩法（红绿翻转）：改动 packages/web/examples/web-demo.ts 的台词本（比如删一个分片），
- * 重启 demo:web，再跑本脚本——EXPECTED_TYPES 断言变红；把断言跟着改对，回绿。
+ * 玩法（红绿翻转）：改动 packages/web/examples/web-demo-shared.ts 的台词本（比如删一个分片），
+ * 重启 demo:web:fake，再跑本脚本——EXPECTED_TYPES 断言变红；把断言跟着改对，回绿。
  * 这就是"浏览器里那次对话"的代码替身：同一份事件日志，两种消费方式。
  */
 import WebSocket from 'ws'
@@ -42,11 +42,11 @@ interface ResponseMessage {
 }
 
 async function main(): Promise<void> {
-  console.log(`连接 ${url} …（先确认终端 1 的 pnpm demo:web 在跑）`)
+  console.log(`连接 ${url} …（先确认终端 1 的 pnpm demo:web:fake 在跑）`)
   const socket = new WebSocket(url)
   await new Promise<void>((resolve, reject) => {
     socket.once('open', () => resolve())
-    socket.once('error', (error) => reject(new Error(`连接失败：${(error as Error).message}\n先起 pnpm demo:web`)))
+    socket.once('error', (error) => reject(new Error(`连接失败：${(error as Error).message}\n先起 pnpm demo:web:fake`)))
   })
 
   const pending = new Map<string, (message: ResponseMessage) => void>()

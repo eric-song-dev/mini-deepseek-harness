@@ -158,7 +158,7 @@ async function main(): Promise<void> {
   await act1()
   await act2()
   console.log(`会话目录：${dir}（${'<id>'}.jsonl 里是完整事件日志）`)
-  console.log('浏览器视角：pnpm demo:web 后发一轮消息，底部「轨迹」面板可以点选回放每一步。')
+  console.log('浏览器视角：pnpm demo:web:fake 后发一轮消息，底部「轨迹」面板可以点选回放每一步。')
 }
 
 main().catch((error) => {

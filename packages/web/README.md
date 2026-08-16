@@ -44,5 +44,6 @@ pnpm vitest run packages/web
 ## 试一下
 
 ```sh
-pnpm demo:web   # 起真 host（假 LLM 台词本），浏览器打开完成一次"真实对话"
+pnpm demo:web       # 浏览器对话用真模型（读 .env 的 key；系统提示注入当前时间）
+pnpm demo:web:fake  # 零 key：假 LLM 台词本，浏览器打开完成一次"真实对话"（流式 + 工具卡片）
 ```

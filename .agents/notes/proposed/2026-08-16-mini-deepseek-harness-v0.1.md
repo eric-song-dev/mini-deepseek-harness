@@ -55,6 +55,11 @@
   真 API 链路 → 8 个流式分片拼接 == 终事件全文，回答 2026 年。
 - 未动：requirements/教程（本增补是 backlog 之外的即时修复，教程不强制同步；
   如需可后续补"真 adapter Web 演示"小节）。
+- **命令改名（2026-08-16，用户拍板）**：`demo:web` 改为 `demo:web:fake`（假 LLM 零 key），
+  `demo:web:real` 改为 `demo:web`（真模型，默认 Web 演示）。文件同步改名：
+  `web-demo.ts` → `web-demo-fake.ts`、`web-demo-real.ts` → `web-demo.ts`；
+  测试 `web-demo-real.test.ts` → `web-demo.test.ts`。所有活文档（根/包 README、
+  M4/M5 教程、my-ws-client、M4/M5 spec 的命令引用）已同步；notes 历史记录不改。
 
 ## M5 完成快照（2026-08-16 增补）
 

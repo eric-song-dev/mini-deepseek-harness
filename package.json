@@ -20,7 +20,7 @@
     "demo:real": "tsx packages/agent/examples/real-chat.ts",
     "build:web": "pnpm --filter @mini-dsh/app-web build",
     "demo:web": "pnpm build:web && tsx packages/web/examples/web-demo.ts",
-    "demo:web:real": "pnpm build:web && tsx packages/web/examples/web-demo-real.ts"
+    "demo:web:fake": "pnpm build:web && tsx packages/web/examples/web-demo-fake.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

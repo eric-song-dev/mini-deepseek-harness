@@ -13,7 +13,7 @@ import { createWebDemoRuntime } from '../examples/web-demo-shared'
 import type { WebDemoRuntime } from '../examples/web-demo-shared'
 
 /**
- * demo:web:real 冒烟测试（post-MVP 增补）：
+ * demo:web（真模型 Web 演示）冒烟测试（post-MVP 增补）：
  * 同一个 web demo runtime（web-demo-shared）换 llm:'real'（OpenAI 兼容 adapter），
  * baseUrl 指向**本地真 HTTP 假端点**（SSE 流式）——零 key、零外网，但走的是
  * adapter 的真实 HTTP + SSE 链路（fetch 不注入）。
@@ -21,6 +21,7 @@ import type { WebDemoRuntime } from '../examples/web-demo-shared'
  * 1. 真 HTTP 调用发生：URL /chat/completions、Bearer key、system prompt 带当前日期；
  * 2. 流式分片 + 终事件 + usage 全部落日志（M4/M5 链路对真 adapter 成立）；
  * 3. projectTurns 能投影出这一轮（轨迹对真对话成立）。
+ * 另含 WS 回归：不注入桥时 webHost 自建升级路径（浏览器同款通道）。
  */
 
 // ---- 假 OpenAI 兼容端点（本地真 HTTP + SSE）----
@@ -138,7 +139,7 @@ function wsClient(url: string) {
   return { ws, request, events: () => events, close: () => ws.close() }
 }
 
-describe('demo:web:real 冒烟（post-MVP 增补：真 adapter 指向本地假端点，零 key）', () => {
+describe('demo:web 冒烟（post-MVP 增补：真 adapter 指向本地假端点，零 key）', () => {
   it('真 OpenAI 兼容 HTTP 链路：带当前日期的 system prompt → SSE 流式 → 会话事件 → 轨迹可投影', async () => {
     const stub = await startStubEndpoint()
     const sessionsDir = await mkdtemp(join(tmpdir(), 'mini-dsh-web-real-'))

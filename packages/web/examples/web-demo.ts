@@ -1,19 +1,33 @@
 /**
- * M4 演示：零 key 的 Web 体验 —— 假 LLM 台词本（一次 bash 工具往返 + 流式最终回答）
- * 驱动真 HTTP+WS host + 浏览器页面。
+ * demo:web（post-MVP 增补，2026-08-16 起为默认 Web 演示）：浏览器里的对话用**真模型**。
  *
- * runtime 组装已抽到 `web-demo-shared.ts`（与 demo:web:real 共用）——这里只负责
- * CLI 参数与启动横幅。想换真模型看 `pnpm demo:web:real`。
+ * 与 demo:web:fake 共用同一个 runtime（web-demo-shared.ts），唯一区别是
+ * `llm: 'real'`（OpenAI 兼容 adapter）——换 provider = 换一行，host/loop/流式/
+ * 轨迹零改动（LLM seam 的教学点）。系统提示自动注入当前时间（datedSystemPrompt），
+ * 模型知道"今天几号"。
  *
- * 用法：pnpm demo:web [--port 8080] [--static apps/web/dist] [--dir .mini-dsh/web-sessions] [--clean]
- *   --port    监听端口（默认 8080）
- *   --static  静态文件目录（默认 apps/web/dist，先由 demo:web 的 build:web 产出）
- *   --dir     会话目录（默认 ./.mini-dsh/web-sessions）
- *   --clean   先清空会话目录
+ * key 读取顺序：环境变量 DEEPSEEK_API_KEY > 项目根 .env 文件（gitignored）。
+ * 可选：DEEPSEEK_MODEL（默认 deepseek-chat）、DEEPSEEK_BASE_URL（默认
+ * api.deepseek.com；指向 Ollama/vLLM 等兼容端点时无需 key）。
+ *
+ * 用法：pnpm demo:web [--port 8081] [--static apps/web/dist] [--dir <目录>] [--clean]
  */
+import { existsSync, readFileSync } from 'node:fs'
 import { stat, mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createWebDemoRuntime } from './web-demo-shared'
+import type { WebDemoRuntimeOptions } from './web-demo-shared'
+
+// ---- 极简 .env 加载（教学版不引 dotenv 依赖；已设置的环境变量优先）----
+const envFile = resolve('.env')
+if (existsSync(envFile)) {
+  for (const line of readFileSync(envFile, 'utf8').split('\n')) {
+    const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim())
+    if (match && process.env[match[1]!] === undefined) {
+      process.env[match[1]!] = match[2]!.replace(/^"|"$/g, '')
+    }
+  }
+}
 
 const args = process.argv.slice(2)
 const clean = args.includes('--clean')
@@ -22,11 +36,21 @@ const opt = (name: string, fallback: string): string => {
   return index >= 0 && args[index + 1] ? args[index + 1]! : fallback
 }
 
-const sessionsDir = resolve(opt('--dir', '.mini-dsh/web-sessions'))
+const sessionsDir = resolve(opt('--dir', '.mini-dsh/web-real-sessions'))
 const staticDir = resolve(opt('--static', 'apps/web/dist'))
-const port = Number(opt('--port', '8080'))
+const port = Number(opt('--port', '8081'))
 
 async function main(): Promise<void> {
+  const apiKey = process.env.DEEPSEEK_API_KEY
+  if (!apiKey) {
+    console.error(
+      '缺少 DeepSeek API key。两种提供方式任选：\n' +
+        '  1) 项目根建 .env（已被 .gitignore 保护）：DEEPSEEK_API_KEY=sk-...\n' +
+        '  2) 环境变量：export DEEPSEEK_API_KEY=sk-...\n' +
+        '提示：不要把 key 贴进聊天/代码/提交里。',
+    )
+    process.exit(1)
+  }
   try {
     const info = await stat(staticDir)
     if (!info.isDirectory()) throw new Error('不是目录')
@@ -37,13 +61,17 @@ async function main(): Promise<void> {
   if (clean) await rm(sessionsDir, { recursive: true, force: true })
   await mkdir(sessionsDir, { recursive: true })
 
-  const { handle } = await createWebDemoRuntime({ llm: 'fake', port, sessionsDir, staticDir })
+  const runtimeOptions: WebDemoRuntimeOptions = { llm: 'real', apiKey, port, sessionsDir, staticDir }
+  if (process.env.DEEPSEEK_BASE_URL !== undefined) runtimeOptions.baseUrl = process.env.DEEPSEEK_BASE_URL
+  if (process.env.DEEPSEEK_MODEL !== undefined) runtimeOptions.model = process.env.DEEPSEEK_MODEL
+  const { handle } = await createWebDemoRuntime(runtimeOptions)
   console.log('========================================')
-  console.log(`mini-deepseek-harness M4 演示已启动：${handle.url}`)
-  console.log('在浏览器打开 → 点「＋ 新建会话」→ 随便说一句话（比如：你好）')
-  console.log('→ 看流式消息逐字出现 + 工具卡片随事件弹出')
-  console.log('（假 LLM 驱动，零 API key；想用真模型见 pnpm demo:web:real；Ctrl+C 退出）')
-  console.log(`会话落盘：${sessionsDir}`)
+  console.log(`mini-deepseek-harness 真模型演示已启动：${handle.url}`)
+  console.log(`（model: ${process.env.DEEPSEEK_MODEL ?? 'deepseek-chat'}，`)
+  console.log(` endpoint: ${process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com'}）`)
+  console.log('在浏览器打开 → 点「＋ 新建会话」→ 随便问（比如：今年是哪一年）')
+  console.log('→ 真模型流式回答 + 轨迹面板回放；系统提示已注入当前时间')
+  console.log(`会话落盘：${sessionsDir}（Ctrl+C 退出）`)
   console.log('========================================')
 }
 
