@@ -259,6 +259,24 @@
 - 与 spec 的偏差记录：示例脚本放 `packages/session/examples/`（沿用 M0 包内 examples 约定），
   而非 spec 里的根级 `examples/`。
 
+## M9 spec 定稿快照（2026-08-16 增补）
+
+- **状态**：M9 spec 已定稿（`docs/milestones/M9.md` 置 `proposed`），按开工协议
+  读完上游必读索引 11 项（一次一个文件），调研记录：
+  `proposed/2026-08-16-m9-mcp-上游调研.md`（seam 契约 + 裁剪逐条核对 + 定稿拍板）。
+- **拍板**：①配置落点 = profile.yml 插件行 `options`（kernel 零改动）；②纳入
+  list_changed 重同步（否则"失败保留旧代"无路可测）；③isError 是结果不是异常
+  （`{ isError: true, content }`，与 bash exit code / skill {error} 同款），仅
+  transport 级失败 throw；④fixture/demo/练习服务器写纯 JS `.mjs`（node 直跑零构建，
+  顺带"语言无关"教学点）；⑤Web 能力接入（M8 教训）：web-demo-shared 挂 mcpClient
+  fixture 实例 + fake 台词本第二轮调 `mcp__fixture__add`，浏览器 tool 卡片可见；
+  ⑥SDK `@modelcontextprotocol/sdk` ^1.30.0 + e2e devDep server-filesystem 2026.7.10。
+- **任务拆解**：T1 包骨架 → T2 config 校验 → T3 命名 → T4 syncTools 两阶段 →
+  T5 executor 结果映射 → T6 插件生命周期（vi.mock SDK）→ T7 e2e 真 stdio（fixture +
+  官方 filesystem）→ T8 demo:mcp 三幕 → T9 web-demo 接入 + 回归 → T10 教程 +
+  文档同步。验收清单 8 条见 spec。
+- 下一步：按 TDD 从 T1 开始编码。
+
 ## M0 完成快照（2026-08-16 增补）
 
 - **状态**：M0 已实现并通过验收（空 profile 启动、ctx 注入测试服务、23 个测试全绿、typecheck 绿、
