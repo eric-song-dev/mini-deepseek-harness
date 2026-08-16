@@ -17,6 +17,7 @@
     "demo:agent": "tsx packages/agent/examples/chat-demo.ts",
     "demo:tools": "tsx packages/agent/examples/tools-demo.ts",
     "demo:trajectory": "tsx packages/agent/examples/trajectory-demo.ts",
+    "demo:skills": "tsx packages/agent/examples/skills-demo.ts",
     "demo:real": "tsx packages/agent/examples/real-chat.ts",
     "build:web": "pnpm --filter @mini-dsh/app-web build",
     "demo:web": "pnpm build:web && tsx packages/web/examples/web-demo.ts",
