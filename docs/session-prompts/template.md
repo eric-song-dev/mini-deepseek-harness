@@ -27,4 +27,5 @@ CORDIS 内核 + 一切皆为插件 + 事件轨迹，参照 deepseek-ai/deepseek-
 - 按 requirements §10 检查 DoD；同步交付该 M 的教程（§5.1，含小白验收）。
 - 更新 notes：把状态指针改为下一个 M。
 - 最终回复里给出下个 session 的启动提示（直接指向本模板文件即可）。
+- 最终回复里给出我在 pnpm demo:web --clean 上的测试用例，我在 UI 上测试下。
 ````
