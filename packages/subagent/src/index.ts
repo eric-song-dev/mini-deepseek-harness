@@ -7,6 +7,8 @@ import type {
 
 export { SubagentError, SubagentRuntime } from './service'
 export type { SubagentsService, Unregister } from './service'
+export { completedTurnPrefix, forkProvider, spawnProvider, startInProcessRun } from './providers'
+export type { InProcessProviderConfig } from './providers'
 export type {
   SubagentProvider,
   SubagentResult,
