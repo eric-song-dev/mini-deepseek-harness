@@ -134,15 +134,34 @@ describe('discoverSkills（filesystem 发现后端，M7 frontmatter 契约）', 
     await expect(discoverSkills(dir)).rejects.toThrow(/userInvocable.*user-invocable/)
   })
 
-  it('自举素材：真扫描仓库 .agents/skills，tdd skill 的 description 来自 frontmatter、content 不含 frontmatter', async () => {
+  it('自举素材：真扫描仓库 .agents/skills，tdd + 6 个移植技能全部解析（description 来自 frontmatter、content 不含 frontmatter）', async () => {
     const repoSkills = fileURLToPath(new URL('../../../.agents/skills', import.meta.url))
     const skills = await discoverSkills(repoSkills)
-    expect(skills.map((s) => s.name)).toEqual(['tdd'])
-    expect(skills[0]!.description).toBe(
+    expect(skills.map((s) => s.name)).toEqual([
+      'archive-agent-notes',
+      'code-review',
+      'doc-standards',
+      'pre-push-checks',
+      'prose-standard',
+      'tdd',
+      'trim-cot-leakage',
+    ])
+    // 每个技能的 description 都非空（frontmatter 解析成功、目录可路由）
+    for (const skill of skills) {
+      expect(skill.description.length).toBeGreaterThan(0)
+      // frontmatter 已剥离：正文以 Markdown 标题开头，而不是以 --- 开头
+      expect(skill.content.trimStart().startsWith('# ')).toBe(true)
+      expect(skill.modelInvocable).toBe(true)
+      expect(skill.userInvocable).toBe(true)
+    }
+    const tdd = skills.find((s) => s.name === 'tdd')!
+    expect(tdd.description).toBe(
       '测试驱动开发纪律：red→green→refactor。写任何实现代码前先写一个失败的测试；适用于 mini-deepseek-harness 的所有功能代码（插件、seam 契约、工具、UI 逻辑）。',
     )
-    expect(skills[0]!.content).toContain('TDD（测试驱动开发）')
-    expect(skills[0]!.content).not.toContain('---')
-    expect(skills[0]!.content).not.toContain('name: tdd')
+    expect(tdd.content).toContain('TDD（测试驱动开发）')
+    expect(tdd.content).not.toContain('name: tdd')
+    const review = skills.find((s) => s.name === 'code-review')!
+    expect(review.description).toContain('审查')
+    expect(review.content).toContain('# 审查 mini-deepseek-harness 的代码变更')
   })
 })

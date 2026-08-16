@@ -9,15 +9,20 @@ import type { FakeLlm } from '@mini-dsh/test-support'
 import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
 import { toolRegistry } from '@mini-dsh/tools'
-import { skillTool, skillsFromDirectory } from '@mini-dsh/skill'
+import { parseSkillFile, skillTool, skillsFromDirectory } from '@mini-dsh/skill'
 import { createRpcBridge, memoryConnectionPair, webHost } from '@mini-dsh/web'
 import { createBridgeClient } from '@mini-dsh/client'
 import type { ClientBridge } from '@mini-dsh/client'
 
 /**
- * skill 自举 e2e（M5 验收核心）：真 host（webHost 门面 + 内存桥）+ 真 skill 工具 +
- * 真 filesystem 发现（仓库自己的 .agents/skills）+ 假 LLM 台词（先 list 再 get tdd）。
- * 断言模型收到的上下文含 SKILL.md 正文 —— mini 版能加载并运行自己的 TDD skill。
+ * skill 自举 e2e（M5 验收建立；M7 升级为 frontmatter 契约验收）：真 host
+ * （webHost 门面 + 内存桥）+ 真 skill 工具 + 真 filesystem 发现（仓库自己的
+ * .agents/skills）+ 假 LLM 台词。断言：
+ * - 目录（list）返回全部 7 个技能（tdd + 6 个移植技能）的 {name, description}；
+ * - get 返回的 content == 文件 frontmatter 之后的正文（用 parseSkillFile 对照，
+ *   不硬编码全文）；
+ * - 假 LLM 按 description 路由：先 list 看描述、再 get 对应技能、最终回复引用
+ *   技能关键词——描述真的能驱动路由。
  * 只有 LLM 是假的（零 API key），其余全部是真实链路。
  */
 
@@ -62,7 +67,13 @@ async function boot(replies: Parameters<typeof createFakeLlm>[0]['replies']): Pr
   }
 }
 
-describe('skill 自举（M5 验收）：假 LLM 台词驱动 skill 工具加载真 TDD skill', () => {
+/** 仓库中某个技能的"frontmatter 之后正文"（真源对照）。 */
+async function bodyOf(name: string): Promise<string> {
+  const raw = await readFile(join(SKILLS_DIR, name, 'SKILL.md'), 'utf8')
+  return parseSkillFile(raw, name).content
+}
+
+describe('skill 自举（M7 验收）：假 LLM 台词驱动 skill 工具加载真技能目录', () => {
   let runtime: Runtime | undefined
 
   afterEach(async () => {
@@ -73,7 +84,7 @@ describe('skill 自举（M5 验收）：假 LLM 台词驱动 skill 工具加载�
     }
   })
 
-  it('先 list 再 get tdd → 模型收到的上下文含 SKILL.md 正文，日志完整落 turn', async () => {
+  it('先 list 再 get tdd → 目录含全部 7 个技能的 description，模型收到的 content == 剥离 frontmatter 的正文，日志完整落 turn', async () => {
     runtime = await boot([
       { toolCalls: [{ id: 's1', name: 'skill', arguments: { action: 'list' } }] },
       { toolCalls: [{ id: 's2', name: 'skill', arguments: { action: 'get', name: 'tdd' } }] },
@@ -89,18 +100,36 @@ describe('skill 自举（M5 验收）：假 LLM 台词驱动 skill 工具加载�
       ['skill'], ['skill'], ['skill'],
     ])
 
-    // 第一次往返（list）：模型看到技能名列表（tdd 在其中）
+    // 第一次往返（list）：模型看到完整技能目录——7 个技能，每个都是 {name, description}
     const listMessage = fake.requests[1]!.messages.at(-1)!
     expect(listMessage.role).toBe('tool')
-    expect((JSON.parse(listMessage.content) as { skills: string[] }).skills).toContain('tdd')
+    const catalog = (JSON.parse(listMessage.content) as { skills: Array<{ name: string; description: string }> }).skills
+    expect(catalog.map((s) => s.name)).toEqual([
+      'archive-agent-notes',
+      'code-review',
+      'doc-standards',
+      'pre-push-checks',
+      'prose-standard',
+      'tdd',
+      'trim-cot-leakage',
+    ])
+    for (const entry of catalog) {
+      expect(entry.description.length).toBeGreaterThan(0)
+    }
 
-    // 第二次往返（get）：模型收到的技能全文 == .agents/skills/tdd/SKILL.md 文件正文
-    const tddBody = await readFile(join(SKILLS_DIR, 'tdd', 'SKILL.md'), 'utf8')
+    // 第二次往返（get）：模型收到的技能正文 == 文件 frontmatter 之后的正文（不含 frontmatter）
+    const tddBody = await bodyOf('tdd')
+    expect(tddBody).toContain('TDD（测试驱动开发）')
+    expect(tddBody).not.toContain('---')
     const bodyMessage = fake.requests[2]!.messages.find(
       (m) => m.role === 'tool' && (JSON.parse(m.content) as { name?: string }).name === 'tdd',
     )
     expect(bodyMessage).toBeDefined()
-    expect(JSON.parse(bodyMessage!.content)).toEqual({ name: 'tdd', content: tddBody })
+    expect(JSON.parse(bodyMessage!.content)).toEqual({
+      name: 'tdd',
+      description: expect.stringContaining('测试驱动开发纪律'),
+      content: tddBody,
+    })
 
     // 日志真源：两次工具往返 + 三次 assistant + turn/end done，全部落盘
     const resumed = await client.request<{ events: Array<{ type: string; payload: unknown }> }>(
@@ -126,5 +155,42 @@ describe('skill 自举（M5 验收）：假 LLM 台词驱动 skill 工具加载�
       'turn/end',
     ])
     expect(resumed.events.at(-1)!.payload).toEqual({ reason: 'done' })
+  })
+
+  it('按 description 路由：台词先 list 看描述、再 get trim-cot-leakage → 最终回复引用技能关键词', async () => {
+    runtime = await boot([
+      { toolCalls: [{ id: 's1', name: 'skill', arguments: { action: 'list' } }] },
+      { toolCalls: [{ id: 's2', name: 'skill', arguments: { action: 'get', name: 'trim-cot-leakage' } }] },
+      { content: '按分类学检查：这行"以前"是变更叙事，改成现在时。' },
+    ])
+    const { fake, client } = runtime
+
+    const created = await client.request<{ meta: { id: string } }>('session.create', { title: '按描述路由' })
+    await client.request('session.send', { id: created.meta.id, content: '这段注释读起来像泄漏的推理过程，帮我检查' })
+
+    // 目录里 trim-cot-leakage 的 description 含"泄漏的推理过程"关键词——描述是路由的依据
+    const listMessage = fake.requests[1]!.messages.at(-1)!
+    const catalog = (JSON.parse(listMessage.content) as { skills: Array<{ name: string; description: string }> }).skills
+    expect(catalog.find((s) => s.name === 'trim-cot-leakage')!.description).toContain('泄漏的推理过程')
+
+    // 模型收到的正文 == 真文件的剥离正文
+    const body = await bodyOf('trim-cot-leakage')
+    const bodyMessage = fake.requests[2]!.messages.find(
+      (m) => m.role === 'tool' && (JSON.parse(m.content) as { name?: string }).name === 'trim-cot-leakage',
+    )
+    expect(JSON.parse(bodyMessage!.content)).toEqual({
+      name: 'trim-cot-leakage',
+      description: expect.stringContaining('泄漏的推理过程'),
+      content: body,
+    })
+
+    // 最终回复引用了技能的分类学关键词：内容真的进了上下文
+    const resumed = await client.request<{ events: Array<{ type: string; payload: unknown }> }>(
+      'session.resume',
+      { id: created.meta.id },
+    )
+    expect(
+      resumed.events.filter((e) => e.type === 'assistant').at(-1)!.payload,
+    ).toMatchObject({ content: expect.stringContaining('变更叙事') })
   })
 })
