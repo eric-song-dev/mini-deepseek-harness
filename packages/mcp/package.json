@@ -1,0 +1,24 @@
+{
+  "name": "@mini-dsh/mcp",
+  "version": "0.1.0",
+  "description": "MCP 客户端桥（stdio）：连接外部 MCP server，把它的工具以 mcp__<server>__<tool> 注册进 Tools 注册表",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/tools": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/agent": "workspace:*",
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/test-support": "workspace:*",
+    "@modelcontextprotocol/server-filesystem": "^2026.7.10"
+  }
+}
