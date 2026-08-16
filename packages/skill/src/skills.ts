@@ -16,10 +16,17 @@ export interface Skill {
   content: string
 }
 
+/** 撤销函数：调用后撤销本次注册；幂等（重复调用无害）。 */
+export type Unregister = () => void
+
 /** Skills 抽象服务。 */
 export interface SkillsService {
-  /** 注册一个 skill；重名报错（防止静默覆盖）。 */
-  register(skill: Skill): void
+  /**
+   * 注册一个 skill；重名报错（防止静默覆盖）。
+   * 返回幂等撤销函数（M6 注册可逆）：调用后 list/get 均不可见，同名可重注册。
+   * 注册方插件用 `ctx.effect(() => () => off())` 挂接，卸载即撤销。
+   */
+  register(skill: Skill): Unregister
   /** 全部已注册技能名（保持注册顺序）。 */
   list(): string[]
   /** 按名取 skill；未知技能抛 UnknownSkillError（seam 对程序调用方是响亮的）。 */
@@ -47,6 +54,12 @@ export function createSkillsRegistry(): SkillsService {
         throw new Error(`skill 已注册：${skill.name}`)
       }
       skills.set(skill.name, skill)
+      let active = true
+      return () => {
+        // 幂等：只撤销"我注册的那一个"——若已被同名重注册，不误删新 skill
+        if (active && skills.get(skill.name) === skill) skills.delete(skill.name)
+        active = false
+      }
     },
     list() {
       return [...skills.keys()]

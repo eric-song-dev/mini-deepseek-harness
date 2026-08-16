@@ -67,10 +67,14 @@ export function createSkillTool(skills: SkillsService): Tool {
   }
 }
 
-/** 插件：把 skill 工具注册进 tools seam（inject skills + tools）。 */
+/**
+ * 插件：把 skill 工具注册进 tools seam（inject skills + tools）。
+ * M6 注册可逆：注册返回撤销函数，经 ctx.effect 挂接——插件卸载即撤销注册。
+ */
 export const skillTool = Object.assign(
   function skillTool(ctx: Context): void {
-    ctx.tools.register(createSkillTool(ctx.skills))
+    const off = ctx.tools.register(createSkillTool(ctx.skills))
+    ctx.effect(() => () => off())
   },
   { inject: ['skills', 'tools'] },
 )
