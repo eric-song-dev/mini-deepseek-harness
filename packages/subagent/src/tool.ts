@@ -1,6 +1,7 @@
 import type { Context } from 'cordis'
 import type { Tool, Unregister } from '@mini-dsh/tools'
-import type { SubagentProvider, SubagentResult, SubagentStopReason, SubagentsService } from './types'
+import type { SubagentsService } from './service'
+import type { SubagentProvider, SubagentResult, SubagentStopReason } from './types'
 
 /**
  * M8 任务 5：`subagent` 工具——基于一个已配置 `ctx.subagents` 提供方的面向模型
