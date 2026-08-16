@@ -46,7 +46,14 @@ export interface SkillsFromDirectoryOptions {
   dir: string
 }
 
-/** 插件：扫描目录 → 把发现的 skill 注册进默认注册表 → 提供 `skills` 服务。 */
+/**
+ * 插件：扫描目录 → 把发现的 skill 注册进默认注册表 → 提供 `skills` 服务。
+ *
+ * M6 注册可逆说明：这里不逐个挂 ctx.effect——注册表由本插件自建并经
+ * `ctx.provide` 提供，插件卸载时 cordis 撤销服务、注册表整体随闭包消亡
+ * （与 webHost 自建桥同款路径）。单个 skill 的撤销语义由 SkillsService.register
+ * 的返回函数承担（契约测试覆盖），注册方按需使用。
+ */
 export const skillsFromDirectory = Object.assign(
   async function skillsFromDirectory(ctx: Context, options: SkillsFromDirectoryOptions): Promise<void> {
     const skills = await discoverSkills(options.dir)

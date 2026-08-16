@@ -6,10 +6,11 @@ import type { SkillsService } from '@mini-dsh/skill'
  * Skills seam 的契约测试：任何实现（filesystem 发现、将来的远程市场/bundled）都必须全部通过。
  * 使用方式：`runSkillsContract({ make })`，每份实现提供自己的 harness。
  *
- * 契约主题（M5 spec 任务 2）：
+ * 契约主题（M5 spec 任务 2；M6 增撤销语义）：
  * - 注册表：register/list/get，list 保持注册顺序，get 取回完整内容；
  * - 未知 skill 报错（UnknownSkillError 带技能名——seam 对程序调用方是响亮的）；
- * - 重复注册报错（防止静默覆盖）。
+ * - 重复注册报错（防止静默覆盖）；
+ * - register 返回幂等撤销函数（M6 注册可逆：撤销后不可见、同名可重注册）。
  */
 export interface SkillsContractHarness {
   /** 每个用例创建一个空实现。 */
