@@ -67,10 +67,14 @@ export function createBashTool(): Tool {
   }
 }
 
-/** bash 工具插件：把工具注册进 `tools` 服务（inject 等待服务就绪）。 */
+/**
+ * bash 工具插件：把工具注册进 `tools` 服务（inject 等待服务就绪）。
+ * M6 注册可逆：注册返回撤销函数，经 ctx.effect 挂接——插件卸载即撤销注册。
+ */
 export const bashTool = Object.assign(
   function bashTool(ctx: Context): void {
-    ctx.tools.register(createBashTool())
+    const off = ctx.tools.register(createBashTool())
+    ctx.effect(() => () => off())
   },
   { inject: ['tools'] },
 )

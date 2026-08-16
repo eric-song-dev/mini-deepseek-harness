@@ -9,6 +9,7 @@ export type {
   ToolHookPhase,
   ToolInvocation,
   ToolsService,
+  Unregister,
 } from './tools'
 export { bashTool, createBashTool } from './bash'
 export type { BashInput, BashOutput } from './bash'

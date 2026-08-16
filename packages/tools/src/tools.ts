@@ -50,16 +50,24 @@ export type ToolHookPhase = 'pre-execute' | 'post-execute'
  */
 export type ToolHook = (invocation: ToolInvocation, output?: unknown) => unknown | Promise<unknown>
 
+/** 撤销函数：调用后撤销本次注册；幂等（重复调用无害）。 */
+export type Unregister = () => void
+
 /** Tools 抽象服务。 */
 export interface ToolsService {
-  /** 注册工具；重名报错（防止静默覆盖）。 */
-  register(tool: Tool): void
+  /**
+   * 注册工具；重名报错（防止静默覆盖）。
+   * 返回幂等撤销函数（M6 注册可逆）：调用后工具从注册表消失（get/list/execute
+   * 均不可见），可同名重新注册。注册方插件用 `ctx.effect(() => () => off())`
+   * 挂接，卸载即撤销——上游 "registrations are effects"。
+   */
+  register(tool: Tool): Unregister
   /** 按名查找工具；不存在返回 undefined。 */
   get(name: string): Tool | undefined
   /** 全部工具的声明（按注册顺序；loop 把它传给模型）。 */
   list(): ToolDeclaration[]
-  /** 挂管线 hook（按阶段分组，同阶段按注册顺序执行）。 */
-  addHook(phase: ToolHookPhase, hook: ToolHook): void
+  /** 挂管线 hook（按阶段分组，同阶段按注册顺序执行）；返回幂等撤销函数。 */
+  addHook(phase: ToolHookPhase, hook: ToolHook): Unregister
   /** 走完整管线执行一次工具调用。 */
   execute(name: string, input: Record<string, unknown>, ctx: ToolContext): Promise<unknown>
 }
@@ -96,6 +104,12 @@ export function createToolRegistry(): ToolsService {
       throw new Error(`工具已注册：${tool.declaration.name}`)
     }
     tools.set(tool.declaration.name, tool)
+    let active = true
+    return () => {
+      // 幂等：只撤销"我注册的那一个"——若已被同名重注册，不误删新工具
+      if (active && tools.get(tool.declaration.name) === tool) tools.delete(tool.declaration.name)
+      active = false
+    }
   }
 
   const get: ToolsService['get'] = (name) => tools.get(name)
@@ -106,6 +120,13 @@ export function createToolRegistry(): ToolsService {
     const phaseHooks = hooks.get(phase) ?? []
     phaseHooks.push(hook)
     hooks.set(phase, phaseHooks)
+    let active = true
+    return () => {
+      if (!active) return
+      const index = phaseHooks.indexOf(hook)
+      if (index !== -1) phaseHooks.splice(index, 1)
+      active = false
+    }
   }
 
   const execute: ToolsService['execute'] = async (name, input, ctx) => {

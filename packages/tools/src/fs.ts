@@ -104,10 +104,14 @@ export function createEditFileTool(): Tool {
   }
 }
 
-/** read_file 工具插件。 */
+/**
+ * read_file / write_file / edit_file 工具插件。M6 注册可逆：注册返回撤销函数，
+ * 经 ctx.effect 挂接——插件卸载即撤销注册。
+ */
 export const readFileTool = Object.assign(
   function readFileTool(ctx: Context): void {
-    ctx.tools.register(createReadFileTool())
+    const off = ctx.tools.register(createReadFileTool())
+    ctx.effect(() => () => off())
   },
   { inject: ['tools'] },
 )
@@ -115,7 +119,8 @@ export const readFileTool = Object.assign(
 /** write_file 工具插件。 */
 export const writeFileTool = Object.assign(
   function writeFileTool(ctx: Context): void {
-    ctx.tools.register(createWriteFileTool())
+    const off = ctx.tools.register(createWriteFileTool())
+    ctx.effect(() => () => off())
   },
   { inject: ['tools'] },
 )
@@ -123,7 +128,8 @@ export const writeFileTool = Object.assign(
 /** edit_file 工具插件。 */
 export const editFileTool = Object.assign(
   function editFileTool(ctx: Context): void {
-    ctx.tools.register(createEditFileTool())
+    const off = ctx.tools.register(createEditFileTool())
+    ctx.effect(() => () => off())
   },
   { inject: ['tools'] },
 )
