@@ -4,6 +4,7 @@ import { projectTurns } from '@mini-dsh/session'
 import type { ProjectedStreamSummary, ProjectedTurnEvent } from '@mini-dsh/session'
 import type { AssistantEventPayload, SessionUsage, ToolEventPayload } from '@mini-dsh/session'
 import { useSlotStore } from '../react'
+import { registerSlot } from '../shell'
 
 /**
  * ui-trajectory 插件（M5）：轨迹面板——"日志真源 → 投影 → 视图"三件套的视图层。
@@ -184,10 +185,10 @@ function FragmentRow(props: FragmentRowProps) {
   )
 }
 
-/** 注册插件：把轨迹面板注册进 slot-registry（shell 负责装配进 extras 区）。 */
+/** 注册插件：把轨迹面板注册进 slot-registry（shell 负责装配进 extras 区）；M6 注册即 effect。 */
 export const uiTrajectory = Object.assign(
   function uiTrajectory(ctx: Context): void {
-    ctx['slot-registry'].register('trajectory', TrajectoryPanel)
+    registerSlot(ctx, 'trajectory', TrajectoryPanel)
   },
   { inject: ['slot-registry'] },
 )

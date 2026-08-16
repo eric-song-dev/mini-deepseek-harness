@@ -167,4 +167,12 @@ describe('wsClientBridge（浏览器侧 WebSocket 包装，M4）', () => {
     FakeWebSocket.fire('close', {})
     await expect(pending).rejects.toMatchObject({ name: 'ConnectionClosedError' })
   })
+
+  it('socket open 监听器一次性：open 后即摘除（M6 无悬挂监听器）', () => {
+    const fake = makeFakeSocket()
+    wsClientBridge({ url: 'ws://fake', webSocket: fake.socket })
+    expect(FakeWebSocket.listeners.get('open')?.size).toBe(1)
+    FakeWebSocket.fire('open', {})
+    expect(FakeWebSocket.listeners.get('open')?.size).toBe(0)
+  })
 })

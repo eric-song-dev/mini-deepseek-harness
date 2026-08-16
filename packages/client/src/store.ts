@@ -29,6 +29,12 @@ export interface ClientSessionStore {
   send(content: string): Promise<void>
   /** 订阅状态变更；返回取消订阅函数。 */
   subscribe(listener: () => void): () => void
+  /**
+   * 幂等卸载（M6 注册可逆）：退订 bridge.onEvent（订阅真的摘除）并清空
+   * store 监听器；之后推送的事件不再进入 store。由 clientShell 的
+   * ctx.effect 在卸载时调用——装配者负责闭环订阅链。
+   */
+  dispose(): void
 }
 
 /** create/resume 的共同应答形状（meta + 完整日志）。 */
@@ -50,12 +56,21 @@ export function createClientSessionStore(bridge: ClientBridge): ClientSessionSto
     for (const listener of [...listeners]) listener()
   }
 
-  // 实时事件：只追加当前会话的（多 client 共享一条桥，各自过滤自己关心的会话）
-  bridge.onEvent((sessionId, event) => {
+  // 实时事件：只追加当前会话的（多 client 共享一条桥，各自过滤自己关心的会话）。
+  // M6 注册可逆：退订函数必须持有并在 dispose 时调用（此前被丢弃 = 订阅泄漏）。
+  const offEvent = bridge.onEvent((sessionId, event) => {
     if (sessionId !== currentId) return
     events = [...events, event]
     notify()
   })
+
+  let disposed = false
+  const dispose = (): void => {
+    if (disposed) return
+    disposed = true
+    offEvent()
+    listeners.clear()
+  }
 
   return {
     get metas() {
@@ -110,5 +125,6 @@ export function createClientSessionStore(bridge: ClientBridge): ClientSessionSto
         listeners.delete(listener)
       }
     },
+    dispose,
   }
 }

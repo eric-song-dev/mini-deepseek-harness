@@ -18,11 +18,29 @@ export interface ClientShellConfig {
   bridge: ClientBridge
 }
 
+/**
+ * M6 注册可逆助手：注册 slot 并把撤销函数挂到插件 fiber 上——注册即 effect，
+ * 卸载即撤销（上游 "registrations are effects" 在 UI 注册点的落地）。
+ * 放这里而不是 slots.ts：注册表本身保持框架无关（不 import cordis）。
+ */
+export function registerSlot(ctx: Context, slot: string, entry: unknown): void {
+  const off = ctx['slot-registry'].register(slot, entry)
+  ctx.effect(() => () => off())
+}
+
 export const clientShell = Object.assign(
   function clientShell(ctx: Context, config: ClientShellConfig): void {
     ctx.provide('client-bridge', config.bridge)
     ctx.provide('slot-registry', createSlotRegistry())
-    ctx.provide('client-session-store', createClientSessionStore(config.bridge))
+    const store = createClientSessionStore(config.bridge)
+    ctx.provide('client-session-store', store)
+    // M6 注册可逆：订阅链（store → bridge → transport）的清理归 shell（装配者）——
+    // 卸载时退订 store 的事件订阅并关闭连接（此前 store 被桥强引用无法 GC、
+    // WebSocket 保持常开 = 真实泄漏）。
+    ctx.effect(() => () => {
+      store.dispose()
+      config.bridge.close()
+    })
   },
   {},
 )

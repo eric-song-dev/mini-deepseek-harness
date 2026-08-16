@@ -51,8 +51,18 @@ export function createBridgeClient(transport: ClientTransport): ClientBridge {
   const pending = new Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }>()
   const eventHandlers = new Set<(sessionId: string, event: SessionEvent) => void>()
   let nextId = 0
+  let closed = false
 
-  transport.onMessage((message) => {
+  const rejectPending = (): void => {
+    for (const { reject } of pending.values()) {
+      reject(new RpcError('ConnectionClosedError', '连接已断开'))
+    }
+    pending.clear()
+  }
+
+  // M6 注册可逆：transport 的订阅取消函数必须持有——close 时摘除监听器
+  //（此前被丢弃 = 监听器悬挂在 transport 上，shell 卸载后仍收消息）。
+  const offMessage = transport.onMessage((message) => {
     if (typeof message !== 'object' || message === null) return
     const msg = message as Incoming
     if (msg.kind === 'response') {
@@ -72,14 +82,19 @@ export function createBridgeClient(transport: ClientTransport): ClientBridge {
       for (const handler of [...eventHandlers]) handler(msg.sessionId, msg.event as SessionEvent)
     }
   })
-
-  transport.onClose(() => {
-    for (const { reject } of pending.values()) reject(new RpcError('ConnectionClosedError', '连接已断开'))
-    pending.clear()
+  const offClose = transport.onClose(() => {
+    closed = true
+    rejectPending()
+    eventHandlers.clear()
+    offMessage()
+    offClose()
   })
 
   return {
     request<T>(method: string, params?: unknown): Promise<T> {
+      if (closed) {
+        return Promise.reject(new RpcError('ConnectionClosedError', '连接已断开'))
+      }
       return new Promise<T>((resolve, reject) => {
         const requestId = `req-${++nextId}`
         pending.set(requestId, { resolve: resolve as (value: unknown) => void, reject })
@@ -93,6 +108,13 @@ export function createBridgeClient(transport: ClientTransport): ClientBridge {
       }
     },
     close() {
+      // 幂等：只清理一次（transport.close 也只调一次）
+      if (closed) return
+      closed = true
+      rejectPending()
+      eventHandlers.clear()
+      offMessage()
+      offClose()
       transport.close()
     },
   }
@@ -111,11 +133,14 @@ export function wsClientBridge(options: WsClientOptions): ClientBridge {
   const socket = new WebSocketImpl(options.url)
   const queue: unknown[] = []
   let open = false
-  socket.addEventListener('open', () => {
+  // M6 注册可逆：open 监听器一次性——open 后即摘除（此前永远悬挂在 socket 上）
+  const onOpen = (): void => {
     open = true
     for (const message of queue) socket.send(JSON.stringify(message))
     queue.length = 0
-  })
+    socket.removeEventListener('open', onOpen)
+  }
+  socket.addEventListener('open', onOpen)
   const transport: ClientTransport = {
     send(message) {
       if (open) socket.send(JSON.stringify(message))

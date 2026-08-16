@@ -1,6 +1,7 @@
 import type { Context } from 'cordis'
 import { projectToolCards } from '../projection'
 import { useSlotStore } from '../react'
+import { registerSlot } from '../shell'
 
 /**
  * ui-tool 插件（M4）：工具卡片——M3 的 tool 调用/结果对渲染成卡片
@@ -32,10 +33,10 @@ export function ToolPanel() {
   )
 }
 
-/** 注册插件：把面板注册进 slot-registry（shell 负责装配）。 */
+/** 注册插件：把面板注册进 slot-registry（shell 负责装配）；M6 注册即 effect。 */
 export const uiTool = Object.assign(
   function uiTool(ctx: Context): void {
-    ctx['slot-registry'].register('tool', ToolPanel)
-},
+    registerSlot(ctx, 'tool', ToolPanel)
+  },
   { inject: ['slot-registry'] },
 )

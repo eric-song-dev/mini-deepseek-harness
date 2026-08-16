@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Context } from 'cordis'
 import { useSlotStore } from '../react'
+import { registerSlot } from '../shell'
 
 /**
  * ui-session-list 插件（M4）：会话列表——新建 / resume / 切换。
@@ -32,10 +33,10 @@ export function SessionListPanel() {
   )
 }
 
-/** 注册插件：把面板注册进 slot-registry（shell 负责装配）。 */
+/** 注册插件：把面板注册进 slot-registry（shell 负责装配）；M6 注册即 effect。 */
 export const uiSessionList = Object.assign(
   function uiSessionList(ctx: Context): void {
-    ctx['slot-registry'].register('session-list', SessionListPanel)
-},
+    registerSlot(ctx, 'session-list', SessionListPanel)
+  },
   { inject: ['slot-registry'] },
 )

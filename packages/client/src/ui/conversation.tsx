@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react'
 import type { Context } from 'cordis'
 import { projectConversation } from '../projection'
 import { useSlotStore } from '../react'
+import { registerSlot } from '../shell'
 
 /**
  * ui-conversation 插件（M4）：对话区——流式消息气泡 + composer。
@@ -104,10 +105,10 @@ export function ConversationPanel() {
   )
 }
 
-/** 注册插件：把面板注册进 slot-registry（shell 负责装配）。 */
+/** 注册插件：把面板注册进 slot-registry（shell 负责装配）；M6 注册即 effect。 */
 export const uiConversation = Object.assign(
   function uiConversation(ctx: Context): void {
-    ctx['slot-registry'].register('conversation', ConversationPanel)
-},
+    registerSlot(ctx, 'conversation', ConversationPanel)
+  },
   { inject: ['slot-registry'] },
 )
