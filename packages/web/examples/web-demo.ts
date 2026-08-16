@@ -71,6 +71,9 @@ async function main(): Promise<void> {
   console.log(` endpoint: ${process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com'}）`)
   console.log('在浏览器打开 → 点「＋ 新建会话」→ 随便问（比如：今年是哪一年）')
   console.log('→ 真模型流式回答 + 轨迹面板回放；系统提示已注入当前时间')
+  console.log('→ M8 多智能体（模型可用 bash/subagent/workflow 工具）：')
+  console.log('  试"请用 subagent 工具派一个子代理，让它用 bash 执行 date 和 pwd')
+  console.log('  并汇报结果"——tool 卡片 + 会话列表出现子会话（点开可回放子轨迹）')
   console.log(`会话落盘：${sessionsDir}（Ctrl+C 退出）`)
   console.log('========================================')
 }
