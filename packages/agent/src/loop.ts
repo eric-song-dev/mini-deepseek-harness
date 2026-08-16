@@ -128,7 +128,10 @@ export const agentLoop = Object.assign(
             // 一次工具调用落两条 tool 事件：调用（只有 input）与结果（带 output），
             // 中间隔着执行——轨迹检查器由此区分"要了什么"与"得到了什么"。
             ctx.emit('tool', { name: call.name, input: call.arguments })
-            const output = await tools.execute(call.name, call.arguments, { cwd })
+            // M8：agent = 会话 ctx（ToolContext 透传）。loop 是唯一知道"当前会话"的组件；
+            // subagent/workflow 工具从这里读谱系/日志/事件总线——loop 本体无任何
+            // subagent 专属逻辑，只此一行透传。
+            const output = await tools.execute(call.name, call.arguments, { cwd, agent: ctx })
             ctx.emit('tool', { name: call.name, input: call.arguments, output })
           }
         }

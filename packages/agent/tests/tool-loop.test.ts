@@ -188,7 +188,9 @@ describe('agentLoop 工具调用循环（M3）', () => {
     try {
       await loop.chat('读')
       expect(session.meta.cwd).toBe('/custom/work')
-      expect(executions[0]!.ctx).toEqual({ cwd: '/custom/work' })
+      // M8 起 ToolContext 还带 agent（会话 ctx 透传）；cwd 契约不变
+      expect(executions[0]!.ctx.cwd).toBe('/custom/work')
+      expect(executions[0]!.ctx.agent).toBeDefined()
     } finally {
       await dispose()
     }
@@ -200,7 +202,8 @@ describe('agentLoop 工具调用循环（M3）', () => {
     })
     try {
       await loop.chat('读')
-      expect(executions[0]!.ctx).toEqual({ cwd: process.cwd() })
+      expect(executions[0]!.ctx.cwd).toBe(process.cwd())
+      expect(executions[0]!.ctx.agent).toBeDefined()
     } finally {
       await dispose()
     }

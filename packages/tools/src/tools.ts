@@ -25,6 +25,14 @@ export interface ToolDeclaration {
 export interface ToolContext {
   /** 会话工作目录；相对路径按它解析（M3 spec 决策 7：cwd 随会话 meta 走）。 */
   cwd: string
+  /**
+   * 当前会话的 ctx（M8）：loop 是唯一知道"当前会话"的组件，把会话 ctx 一行透传
+   * 进执行上下文（上游同款：loop 为每次模型驱动的工具调用设置 exec.agent）。
+   * 会话感知的工具（subagent/workflow）从它读谱系（session-meta）、日志（session-log）
+   * 并把观察事件 emit 进会话隔离总线。可选：直接调 tools.execute 的调用方（测试等）
+   * 没有会话，不传。
+   */
+  agent?: Context
 }
 
 /** 一个工具 = 声明（给模型看）+ 实现（真正动手）。 */
