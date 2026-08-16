@@ -1,0 +1,22 @@
+{
+  "name": "@mini-dsh/workflow",
+  "version": "0.1.0",
+  "description": "WorkflowEngine seam（同线程脚本编排）+ workflow 工具（模型编写会启动 subagent 的编排脚本）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/subagent": "workspace:*",
+    "@mini-dsh/tools": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}
