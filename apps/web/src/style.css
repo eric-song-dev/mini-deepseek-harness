@@ -101,6 +101,13 @@ body {
   white-space: nowrap;
 }
 
+.dsh-session-empty {
+  margin: 0 8px;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .dsh-conversation {
   display: flex;
   flex-direction: column;
@@ -123,6 +130,45 @@ body {
   color: var(--muted);
   text-align: center;
   margin-top: 48px;
+}
+
+/* ---- 无会话空态（post-MVP UX）：chatbox 不渲染，中间是大新建会话按钮 ---- */
+.dsh-conversation-start {
+  align-items: center;
+  justify-content: center;
+}
+
+.dsh-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.dsh-start-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dsh-start-hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.dsh-start-session {
+  padding: 12px 32px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.dsh-start-session:hover {
+  filter: brightness(1.12);
 }
 
 .dsh-bubble {

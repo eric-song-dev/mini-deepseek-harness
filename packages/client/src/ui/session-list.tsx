@@ -18,6 +18,7 @@ export function SessionListPanel() {
       <button className="dsh-new-session" onClick={() => void store.create()}>
         ＋ 新建会话
       </button>
+      {store.metas.length === 0 && <div className="dsh-session-empty">还没有会话</div>}
       {store.metas.map((meta) => (
         <div
           key={meta.id}
