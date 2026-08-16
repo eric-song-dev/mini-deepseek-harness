@@ -53,7 +53,9 @@ pre-execute hooks → execute（工具实现） → post-execute hooks
 | `edit_file` | `{path, oldText, newText}` | `{path, replaced}` | **精确替换**：旧文本必须恰好出现一次，找不到/出现多次都报错且文件不动 |
 
 cwd 来源：会话 meta（M3 起 `SessionManager.create({ cwd })` 记入 JSONL 头记录），loop 经
-`session-meta` 取到后放进执行上下文 `ToolContext.cwd`。
+`session-meta` 取到后放进执行上下文 `ToolContext.cwd`。M8 起 `ToolContext` 还带可选
+`agent`（会话 ctx，loop 一行透传）：会话感知的工具（`subagent`/`workflow`）从它读
+谱系/日志并把观察事件 emit 进会话隔离总线。
 
 ## ⚠️ 无沙箱（教学版，风险明示）
 

@@ -103,6 +103,16 @@ cordis 的子 ctx 沿原型链**共享**根 ctx 的事件总线实例。若不�
 - **`SessionMeta.cwd?`**：会话工作目录（M3 spec 决策 7）。`SessionManager.create({ cwd })`
   记入 JSONL 头记录——M1 的头记录格式天然兼容，旧会话 resume 时字段缺省。
 
+### M8 增量：会话谱系 + fork 种子
+
+- **`SessionMeta.parentSessionId?` / `depth?`**：subagent 子会话的谱系（谁派生的我、
+  第几层委派），只记账不设限；`SessionManager.create({ parentSessionId, depth })`
+  记入 JSONL 头记录，旧会话缺省 = 顶层会话。
+- **`create({ seed })`**：fork 提供方把父日志的"平衡已完成轮次前缀"（截至最后一个
+  `turn/end` 的轮次事件，不含父头记录）作为子会话初始历史。manager 负责把种子 seq
+  平移（子头记录占 seq 1，种子变 2..N+1），后端按原样写盘——resume 重放同前缀、
+  继续追加 seq 连续。
+
 ### M5 增量：轨迹投影 + usage 落日志
 
 - **`projectTurns(events)`**（`src/turns.ts`）：输出侧投影——按轮分组

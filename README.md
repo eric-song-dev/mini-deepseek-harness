@@ -16,6 +16,7 @@ pnpm demo:agent    # M2 demo：agent loop 三幕（零 API key）
 pnpm demo:tools --clean  # M3 demo：假 LLM 台词本驱动真工具（读→改→总结，零 API key）
 pnpm demo:trajectory --clean  # M5 demo：轨迹回放 + skill 自举两幕（零 API key）
 pnpm demo:skills --clean      # M7 demo：技能目录 + 按 description 路由 + 调用策略（零 API key）
+pnpm demo:subagent --clean  # M8 demo：subagent 委派回收 + workflow 编排 + fatal/卸载（零 API key）
 pnpm demo:web --clean  # 浏览器对话用真模型（读 .env 的 key；系统提示自动注入当前时间）
 pnpm demo:web:fake --clean  # 零 key Web 演示：假 LLM 台词本（流式 + 工具卡片）
 # 真 API 冒烟（唯一需要 key 的命令；key 放 .env 或环境变量 DEEPSEEK_API_KEY，其余全部零 key）：
@@ -35,6 +36,8 @@ pnpm demo:real --ask "用一句话介绍你自己"
 | `packages/web` | host：RpcBridge seam + HTTP/WS 桥 + SessionManager 门面 RPC（静态文件 + 实时事件） |
 | `packages/client` | Client Slot seam + UI 插件：会话列表 / composer / 流式消息 / tool 卡片 / 轨迹面板（M5） |
 | `packages/skill` | Skills seam（注册表 + filesystem 发现）+ skill 工具（模型按需检索技能，M5；M7 起 SKILL.md frontmatter 契约 + 7 个技能） |
+| `packages/subagent` | Subagents seam（具名 provider 注册表）+ spawn/fork 提供方 + subagent 委派工具（M8） |
+| `packages/workflow` | WorkflowEngine seam（同线程脚本编排）+ workflow 工具（模型写扇出脚本，M8） |
 | `packages/bundle-web` | web profile 组合：client-shell + UI 插件排成浏览器应用 |
 | `apps/web` | Web 客户端壳（Vite entry，只注入 bundle-web，不是独立应用） |
 
@@ -52,17 +55,20 @@ pnpm demo:real --ask "用一句话介绍你自己"
 
 ## 状态
 
-MVP（M0–M5）**全部完成**，M6（一切注册皆可逆）、M7（原版 AI 技能移植）**已完成**：
+MVP（M0–M5）**全部完成**，M6（一切注册皆可逆）、M7（原版 AI 技能移植）、M8
+（subagent / workflow 多智能体编排）**已完成**：
 M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 +
 resume + 崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）、M3（Tools seam + bash/fs
 工具 + 工具调用循环）、M4（Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片）、
 M5（Trajectory 简化视图 + skills 子系统，含 skill 自举）、M6（自有 seam 注册全部可
 撤销：注册即 effect + HMR-safety 测试组）、M7（上游技能体系移植：SKILL.md frontmatter
 契约 + fail-closed 校验 + code-review/prose-standard/trim-cot-leakage/pre-push-checks/
-doc-standards/archive-agent-notes 六个技能，`demo:skills` 零 key 验收）。
-**M8–M11 已排期（2026-08-16）**：M8 subagent/workflow → M9 MCP → M10 plan/todo
+doc-standards/archive-agent-notes 六个技能，`demo:skills` 零 key 验收）、M8（subagents
+seam + spawn/fork 进程内提供方 + `subagent` 工具 + WorkflowEngine 脚本编排 + `workflow`
+工具，loop 零专属改动，`demo:subagent` 零 key 验收）。
+**M9–M11 已排期（2026-08-16）**：M9 MCP → M10 plan/todo
 （**goal 先不做**）→ M11 web search 插件（可插拔机制已实现，M11 用其落地第一个外部
 HTTP 工具）。每个 M 开工先按 `docs/references/upstream.md` 的上游源码索引读上游文档
-与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M8–M11 已建 draft 占位）。其余
+与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M9–M11 已建 draft 占位）。其余
 backlog（CLI / 审批栈 / Trajectory v2 / 压轴教程等）见 `docs/requirements.md` §6 与
 notes 状态指针。

@@ -18,7 +18,7 @@ loop.chat('你好')
   → emit assistant {content, toolCalls?}   # 助手回复（M3 起可能"要工具"）
   → [模型要工具：] 对每个 toolCall：
       emit tool {name, input}              # 调用事件（只有 input）
-      tools.execute(name, input, {cwd})    # Tools seam：pre hooks → execute → post hooks
+      tools.execute(name, input, {cwd, agent: ctx})  # Tools seam：pre → execute → post；agent=会话 ctx（M8 一行透传）
       emit tool {name, input, output}      # 结果事件（带 output）
       → 再读日志 → 投影（结果成 role:tool 消息）→ 再问模型
   → emit assistant {content:...}        # 最终文字回答

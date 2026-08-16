@@ -1,7 +1,7 @@
 # mini-deepseek-harness 需求文档
 
-> 版本：v0.4 · 2026-08-16 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）
-> 已完成；M8–M11 已排期（subagent/workflow → MCP → plan/todo → web search，详见 §6/§9）
+> 版本：v0.5 · 2026-08-16 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）、
+> M8（subagent/workflow）已完成；M9–M11 已排期（MCP → plan/todo → web search，详见 §6/§9）
 > 上游参照：[deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（"Everything is a Plugin"，113k+ stars）
 
 ## 1. 项目定位
@@ -140,8 +140,10 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | `SessionPersistence` | 抽象服务 | SQLite 后端、远端存储 |
 | `Tools` | 注册表 + 执行管线 | approval 栈、MCP 工具 |
 | `Skills` | provider 注册表 | 远程 skill 市场、bundled skill |
+| `Subagents`（M8） | 具名 provider 注册表 + 一次前台 start | 进程外协议、可继续后台子 agent、能力矩阵 |
+| `WorkflowEngine`（M8） | 脚本编排引擎（`ctx.workflowEngine`） | worker-thread 隔离引擎 |
 | Client `Slot` | UI 注册点 | 原版任意 ui-* 插件 |
-| 事件 | `session/*`、`agent/*` | telemetry、compaction、subagent |
+| 事件 | `session/*`、`agent/*`、`subagent/*`、`workflow/*` | telemetry、compaction、subagent |
 
 > M6 起（硬约束 6）：以上 seam 的注册 API（tools/skills 的 register、RPC 的 handle、
 > slot 的 register、订阅类 onEvent）一律返回幂等撤销函数，注册方插件经 `ctx.effect`
@@ -159,7 +161,7 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | **M5** | Trajectory 简化视图 + skills 子系统 | 轨迹可回放 M4 的对话；`skill` 工具能加载 TDD skill |
 | **M6** | 一切注册皆可逆（注册即 effect） | 卸载任一注册插件后其注册项消失（工具/RPC 方法/slot/订阅/句柄），HMR-safety 测试组全绿 |
 | **M7** | 原版 AI 技能移植：学习上游 `.agents/.claude` 技能体系（SKILL.md 格式 + 发现约定），把合适的一批上游技能 copy/改写成 mini 版 | `skill` 工具可列出并加载全部移植技能；移植技能在本仓库真实可用（零 key 验收）——**已完成（2026-08-16）** |
-| **M8** | subagent / workflow：多智能体编排最小集（in-process subagent 服务 + tool-subagent；workflow 最小 pipeline） | 父 agent 派生子代理完成子任务并回收结果，全链路入轨迹、注册可逆 |
+| **M8** | subagent / workflow：多智能体编排最小集（in-process subagent 服务 + tool-subagent；workflow 最小 pipeline） | 父 agent 派生子代理完成子任务并回收结果，全链路入轨迹、注册可逆——**已完成（2026-08-16）** |
 | **M9** | MCP：mcp-client seam + stdio transport + 外部 MCP server 的工具注册进 Tools 注册表 | 连上一个真 MCP server 后其工具可被模型调用；断开即撤销 |
 | **M10** | plan / todo：plan 布尔模式开关（`plan/mode` 事件 + `planMode` 服务 + `plan:policy` 段）+ todo 服务 + `todo_write` 工具 + Web 最小展示（**goal 不做**） | 模型用 plan/todo 工具规划并跟踪任务，plan/todo 事件入日志可回放 |
 | **M11** | web search：`ctx.web` 能力 seam（provider 注册表 + 执行时选择）+ `deepseekWebSearch`/`fakeWebSearch` 提供方 + `web_search` 工具（可插拔示范：第一个外部 HTTP 工具插件） | profile 加插件行即获 web_search；fake 提供方零 key 全链路可回放；真提供方假 HTTP 端点测试；卸载即撤销 |
