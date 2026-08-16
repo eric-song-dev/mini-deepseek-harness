@@ -77,3 +77,10 @@ pnpm demo:tools --clean          # 假 LLM 台词本驱动真工具：读 → �
 | `tests/tools-contract.test.ts` | 默认注册表跑契约套件 |
 | `tests/bash.test.ts` | bash：输出透传、exit code 非异常、cwd 解析与覆盖、spawn 失败 |
 | `tests/fs.test.ts` | 文件三工具：读写往返、精确替换、路径解析、不存在报错、插件注册 |
+
+## 注册可逆（M6）
+
+`register` 与 `addHook` 返回**幂等撤销函数**；工具插件把撤销函数挂上 `ctx.effect`——
+卸载插件即撤销注册（上游 "registrations are effects"）。守护测试：
+`tests/reversibility.test.ts`（卸载 bashTool 的 fiber → 注册表为空 + `execute` 抛
+`UnknownToolError`）。**给 agent 加能力 = 注册一个工具，撤能力 = 卸载那个插件。**

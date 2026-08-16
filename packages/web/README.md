@@ -47,3 +47,9 @@ pnpm vitest run packages/web
 pnpm demo:web       # 浏览器对话用真模型（读 .env 的 key；系统提示注入当前时间）
 pnpm demo:web:fake  # 零 key：假 LLM 台词本，浏览器打开完成一次"真实对话"（流式 + 工具卡片）
 ```
+
+## 注册可逆（M6）
+
+`RpcBridge.handle` 返回幂等撤销函数；webHost 的 4 个 `session.*` 方法经 `ctx.effect`
+挂接——卸载 webHost 即撤销全部 RPC 方法（守护测试：`tests/host.test.ts` 的卸载用例 +
+`tests/bridge.test.ts` 的撤销契约）。注入桥的路径（测试/未来的 HMR）同样正确撤销。

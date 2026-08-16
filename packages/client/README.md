@@ -44,3 +44,11 @@ pnpm vitest run --project dom   # jsdom workspace（与 node 侧分开跑，互�
 新建会话 → 发消息 → 流式气泡 → tool 卡片——这是"浏览器里完成一次真实对话"的自动化替身
 （人工浏览器验收交给 `pnpm demo:web:fake`（零 key）与教程练习）。
 `tests/trajectory.test.tsx`（M5）同款链路跑轨迹回放：轮表/事件明细/检查器/token 兜底。
+
+## 注册可逆（M6）
+
+订阅链（store → bridge → transport）的清理归 **clientShell（装配者）**：卸载时
+`store.dispose()` 退订事件 + `bridge.close()` 关连接（`tests/shell.test.ts` 守护）。
+`SlotRegistry.register` 返回幂等撤销函数，ui 插件经 `registerSlot` 助手挂
+`ctx.effect`——卸载 ui 插件即撤销 slot（`tests/ui-reversibility.test.ts` 守护）。
+`createBridgeClient.close()` 幂等：拒绝未决请求、清空订阅、摘除 transport 监听器。

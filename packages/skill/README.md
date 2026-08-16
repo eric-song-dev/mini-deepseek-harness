@@ -42,3 +42,10 @@ await ctx.plugin(skillTool)
 - `tests/tool.test.ts`：工具语义；
 - `tests/bootstrap.e2e.test.ts`：**自举 e2e**——真 host + 真文件系统 + 假 LLM 台词
   （list → get tdd），断言模型收到的上下文 == 仓库 `.agents/skills/tdd/SKILL.md` 正文。
+
+## 注册可逆（M6）
+
+`SkillsService.register` 返回幂等撤销函数；`skillTool` 对 tools seam 的注册经
+`ctx.effect` 挂接——卸载 `skillTool` 插件即从模型可见面摘除 skill 工具
+（守护测试 `tests/reversibility.test.ts`）。`skillsFromDirectory` 的注册表由插件
+自建并经 `ctx.provide` 提供，插件卸载时整体随服务消亡。
