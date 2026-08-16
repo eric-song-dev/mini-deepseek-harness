@@ -38,6 +38,17 @@ export function runSkillsContract(harness: SkillsContractHarness): void {
       expect(skills.get('tdd').content).toBe('版本一')
     })
 
+    it('register 返回幂等撤销函数：撤销后 list/get 均不可见，重复撤销无害，同名可重注册（M6）', () => {
+      const off = skills.register({ name: 'tdd', content: '# TDD 纪律' })
+      expect(skills.list()).toEqual(['tdd'])
+      off()
+      expect(skills.list()).toEqual([])
+      expect(() => skills.get('tdd')).toThrow(UnknownSkillError)
+      expect(() => off()).not.toThrow()
+      skills.register({ name: 'tdd', content: '# 新版' })
+      expect(skills.get('tdd').content).toBe('# 新版')
+    })
+
     it('get 未知 skill 抛 UnknownSkillError（带技能名，程序调用方能拿到失败原因）', () => {
       expect(() => skills.get('nope')).toThrow(UnknownSkillError)
       expect(() => skills.get('nope')).toThrow(/nope/)
