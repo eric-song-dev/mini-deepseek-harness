@@ -1,6 +1,6 @@
 export type { EventMessage, HostMessage, RequestMessage, ResponseMessage, RpcErrorPayload } from './protocol'
 export { createRpcBridge, memoryConnectionPair } from './bridge'
-export type { BridgeConnection, RpcBridge, RpcHandler } from './bridge'
+export type { BridgeConnection, RpcBridge, RpcHandler, Unregister } from './bridge'
 export { attachWsBridge } from './ws-server'
 export { RpcBadParamsError, webHost } from './host'
 export type { WebHostHandle, WebHostOptions } from './host'

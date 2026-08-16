@@ -138,29 +138,36 @@ export const webHost = Object.assign(
     }
 
     // —— RPC 方法最小集（客户端只认这些名字，桥负责配对与错误）——
-    bridge.handle('session.list', () => manager.list())
-    bridge.handle('session.create', async (params) => {
-      const input = parseCreateParams(params)
-      // title 缺省由 host 补默认标题（client 的「＋ 新建会话」不传 title）
-      if (input.title === undefined || input.title.trim() === '') input.title = defaultSessionTitle()
-      const session = await manager.create(input)
-      await attachSession(session)
-      // 与 resume 对称：返回 meta + 初始日志（至少含 session/created 头记录）
-      return { meta: session.meta, events: session.log }
-    })
-    bridge.handle('session.resume', async (params) => {
-      const id = requireString(params, 'id')
-      const { session } = await getSession(id)
-      // 返回完整历史：client 重连后靠它恢复视图（resume 幂等）
-      return { meta: session.meta, events: session.log }
-    })
-    bridge.handle('session.send', async (params) => {
-      const id = requireString(params, 'id')
-      const content = requireString(params, 'content')
-      const { loop } = await getSession(id)
-      await loop.chat(content)
-      // 本轮的事件已在 chat 期间经桥推完；这里只确认"轮次完成"
-      return {}
+    // M6 注册可逆：每个 handle 返回撤销函数，经 ctx.effect 挂接——webHost 卸载
+    // 即撤销全部方法（注入桥路径同样正确：HMR-safety 测试守护）。
+    const offHandlers = [
+      bridge.handle('session.list', () => manager.list()),
+      bridge.handle('session.create', async (params) => {
+        const input = parseCreateParams(params)
+        // title 缺省由 host 补默认标题（client 的「＋ 新建会话」不传 title）
+        if (input.title === undefined || input.title.trim() === '') input.title = defaultSessionTitle()
+        const session = await manager.create(input)
+        await attachSession(session)
+        // 与 resume 对称：返回 meta + 初始日志（至少含 session/created 头记录）
+        return { meta: session.meta, events: session.log }
+      }),
+      bridge.handle('session.resume', async (params) => {
+        const id = requireString(params, 'id')
+        const { session } = await getSession(id)
+        // 返回完整历史：client 重连后靠它恢复视图（resume 幂等）
+        return { meta: session.meta, events: session.log }
+      }),
+      bridge.handle('session.send', async (params) => {
+        const id = requireString(params, 'id')
+        const content = requireString(params, 'content')
+        const { loop } = await getSession(id)
+        await loop.chat(content)
+        // 本轮的事件已在 chat 期间经桥推完；这里只确认"轮次完成"
+        return {}
+      }),
+    ]
+    ctx.effect(() => () => {
+      for (const off of offHandlers) off()
     })
 
     // —— HTTP：静态文件 + WS 升级握手 ——

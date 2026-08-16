@@ -24,10 +24,18 @@ export interface BridgeConnection {
 /** 一个 RPC 方法处理器：入参是请求的 params，返回值（或 Promise）是应答的 result。 */
 export type RpcHandler = (params: unknown) => unknown | Promise<unknown>
 
+/** 撤销函数：调用后撤销本次注册；幂等（重复调用无害）。 */
+export type Unregister = () => void
+
 /** 桥的公开面（webHost 提供为 `rpc-bridge` 服务）。 */
 export interface RpcBridge {
-  /** 注册一个 RPC 方法；同名重复注册抛错（防止静默覆盖）。 */
-  handle(method: string, handler: RpcHandler): void
+  /**
+   * 注册一个 RPC 方法；同名重复注册抛错（防止静默覆盖）。
+   * 返回幂等撤销函数（M6 注册可逆）：撤销后请求得到 UnknownMethodError，
+   * 同名可重新注册。注册方插件用 `ctx.effect(() => () => off())` 挂接，
+   * 卸载即撤销——上游 "registrations are effects"。
+   */
+  handle(method: string, handler: RpcHandler): Unregister
   /** 把一条会话事件推给全部已连接的 client（按推送顺序到达）。 */
   pushEvent(sessionId: string, event: SessionEvent): void
   /** 接收一条新连接（transport 侧调用）。 */
@@ -102,6 +110,12 @@ export function createRpcBridge(): RpcBridge {
     handle(method, handler) {
       if (handlers.has(method)) throw new Error(`RPC 方法已注册：${method}`)
       handlers.set(method, handler)
+      let active = true
+      return () => {
+        // 幂等：只撤销"我注册的那一个"——若已被同名重注册，不误删新 handler
+        if (active && handlers.get(method) === handler) handlers.delete(method)
+        active = false
+      }
     },
     pushEvent(sessionId, event) {
       for (const conn of connections) {
