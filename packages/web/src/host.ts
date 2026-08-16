@@ -72,6 +72,12 @@ function requireString(params: unknown, key: string): string {
   return value
 }
 
+/** 缺省会话标题：`新会话 08-16 14:32`（分钟粒度，并存会话也能区分）。 */
+function defaultSessionTitle(now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `新会话 ${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
 function parseCreateParams(params: unknown): { title?: string; cwd?: string } {
   if (params === undefined) return {}
   if (typeof params !== 'object' || params === null || Array.isArray(params)) {
@@ -134,7 +140,10 @@ export const webHost = Object.assign(
     // —— RPC 方法最小集（客户端只认这些名字，桥负责配对与错误）——
     bridge.handle('session.list', () => manager.list())
     bridge.handle('session.create', async (params) => {
-      const session = await manager.create(parseCreateParams(params))
+      const input = parseCreateParams(params)
+      // title 缺省由 host 补默认标题（client 的「＋ 新建会话」不传 title）
+      if (input.title === undefined || input.title.trim() === '') input.title = defaultSessionTitle()
+      const session = await manager.create(input)
       await attachSession(session)
       // 与 resume 对称：返回 meta + 初始日志（至少含 session/created 头记录）
       return { meta: session.meta, events: session.log }
