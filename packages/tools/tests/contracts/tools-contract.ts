@@ -51,6 +51,18 @@ export function runToolsContract(harness: ToolsContractHarness): void {
       expect(() => tools.register(echoTool('a'))).toThrow(/已注册/)
     })
 
+    it('register 返回幂等撤销函数：撤销后 get/list/execute 均不可见，重复撤销无害，同名可重注册', async () => {
+      const off = tools.register(echoTool('a'))
+      expect(tools.get('a')).toBeDefined()
+      off()
+      expect(tools.get('a')).toBeUndefined()
+      expect(tools.list()).toEqual([])
+      await expect(tools.execute('a', {}, testCtx)).rejects.toBeInstanceOf(UnknownToolError)
+      expect(() => off()).not.toThrow()
+      tools.register(echoTool('a'))
+      expect(tools.list().map((d) => d.name)).toEqual(['a'])
+    })
+
     it('execute 未知工具抛 UnknownToolError（带工具名）', async () => {
       await expect(tools.execute('nope', {}, testCtx)).rejects.toBeInstanceOf(UnknownToolError)
       await expect(tools.execute('nope', {}, testCtx)).rejects.toMatchObject({ name: 'UnknownToolError' })
@@ -110,6 +122,23 @@ export function runToolsContract(harness: ToolsContractHarness): void {
       })
       await expect(tools.execute('t', {}, testCtx)).rejects.toBeInstanceOf(ToolDeniedError)
       expect(executed).toBe(false)
+    })
+
+    it('addHook 返回幂等撤销函数：撤销后该 hook 不再执行（M6 注册可逆）', async () => {
+      const order: string[] = []
+      tools.register({
+        declaration: { name: 't', description: '', parameters: {} },
+        execute: async () => 'ok',
+      })
+      const off = tools.addHook('pre-execute', () => {
+        order.push('pre')
+      })
+      await tools.execute('t', {}, testCtx)
+      expect(order).toEqual(['pre'])
+      off()
+      off()
+      await tools.execute('t', {}, testCtx)
+      expect(order).toEqual(['pre'])
     })
 
     it('post-execute hook 的返回值替换输出（结果整形）；返回 undefined 表示不改', async () => {
