@@ -91,6 +91,10 @@ export const agentLoop = Object.assign(
     // 不用 ctx.provide：cordis 服务键按根 ctx 作用域唯一，并存会话各自 provide 会撞键
     // （同 session-log 的坑）；自有属性遮蔽让每会话一个 loop 实例（tests/loop.test.ts 守护）。
     Object.defineProperty(ctx, 'agent-loop', { value: loop, configurable: true })
+    // M6 注册可逆：注册与撤销对称——fiber dispose 时摘除句柄（configurable 已允许 delete）。
+    ctx.effect(() => () => {
+      Reflect.deleteProperty(ctx, 'agent-loop')
+    })
 
     async function runTurn(content: string): Promise<void> {
       ctx.emit('turn/start')

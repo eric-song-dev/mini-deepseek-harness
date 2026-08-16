@@ -45,12 +45,16 @@ describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
     const { session, dispose } = await makeHarness()
     try {
       const fiber = await session.ctx.plugin(agentLoop)
-      const loopCtx = fiber.ctx as Record<string, unknown>
+      const loopCtx = fiber.ctx
       expect(loopCtx['agent-loop']).toBeDefined()
+      expect(Object.getOwnPropertyDescriptor(loopCtx, 'agent-loop')).toBeDefined()
 
       await fiber.dispose()
 
-      expect(loopCtx['agent-loop']).toBeUndefined()
+      // 自有属性已删除（getOwnPropertyDescriptor 走 target 不触发 cordis 的
+      // inject 检查）；直接访问会因 fiber 已死被 cordis 拒绝——句柄不越出 fiber 存活
+      expect(Object.getOwnPropertyDescriptor(loopCtx, 'agent-loop')).toBeUndefined()
+      expect(() => loopCtx['agent-loop']).toThrow(/without inject/)
     } finally {
       await dispose()
     }

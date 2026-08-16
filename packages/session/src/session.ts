@@ -91,6 +91,10 @@ export class Session {
       }) as Events[keyof Events]
       ctx.on(name as keyof Events, handler)
     }
+
+    // M6 注册可逆：卸载 = 落盘排空。effect 清理返回 flush() 的 Promise，
+    // cordis 在 _unload 时会 await 它（fiber.dispose() 因此等待排队写入完成）。
+    ctx.effect(() => () => this.flush())
   }
 
   /** append-only 日志（只读视图；新条目只能由桥接追加）。 */
