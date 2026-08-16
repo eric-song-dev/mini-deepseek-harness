@@ -260,6 +260,31 @@ importers:
         specifier: ^8.5.10
         version: 8.18.1
 
+  packages/workflow:
+    dependencies:
+      '@mini-dsh/subagent':
+        specifier: workspace:*
+        version: link:../subagent
+      '@mini-dsh/tools':
+        specifier: workspace:*
+        version: link:../tools
+      cordis:
+        specifier: 4.0.0-rc.8
+        version: 4.0.0-rc.8
+    devDependencies:
+      '@mini-dsh/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@mini-dsh/llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@mini-dsh/session':
+        specifier: workspace:*
+        version: link:../session
+      '@mini-dsh/test-support':
+        specifier: workspace:*
+        version: link:../test-support
+
 packages:
 
   '@asamuzakjp/css-color@6.0.7':

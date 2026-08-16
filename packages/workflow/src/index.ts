@@ -8,6 +8,8 @@ import type {
 
 export { isFatalWorkflowError, WorkflowEngine, WorkflowError } from './engine'
 export type { WorkflowEngineConfig, WorkflowErrorCode, WorkflowEventName } from './engine'
+export { createWorkflowTool, toolWorkflow, workflowStopReasonError } from './tool'
+export type { ToolWorkflowConfig } from './tool'
 export type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,

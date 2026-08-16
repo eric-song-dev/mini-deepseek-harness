@@ -17,6 +17,7 @@
   "devDependencies": {
     "@mini-dsh/llm": "workspace:*",
     "@mini-dsh/session": "workspace:*",
-    "@mini-dsh/test-support": "workspace:*"
+    "@mini-dsh/test-support": "workspace:*",
+    "@mini-dsh/agent": "workspace:*"
   }
 }
