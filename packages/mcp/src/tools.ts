@@ -42,27 +42,33 @@ export function publicToolName(serverName: string, rawName: string): string {
 /** MCP 服务器声明的单个工具（wire 上能拿到的最小形状）。 */
 export interface McpToolInfo {
   name: string
-  description?: string
-  inputSchema?: Record<string, unknown>
+  /** exactOptionalPropertyTypes：SDK 声明了显式 undefined 联合，这里照收。 */
+  description?: string | undefined
+  inputSchema?: Record<string, unknown> | undefined
 }
 
 /** tools/list 的一页结果。 */
 export interface McpListToolsResult {
   tools: McpToolInfo[]
-  nextCursor?: string
+  /** exactOptionalPropertyTypes：SDK 声明了显式 undefined 联合，这里照收。 */
+  nextCursor?: string | undefined
 }
 
-/** 单个 MCP 内容块（信任边界：字段可能缺失，都按可选读）。 */
+/** 单个 MCP 内容块（信任边界：字段可能缺失，都按可选读；exactOptionalPropertyTypes 照收 SDK 的 undefined 联合）。 */
 export interface McpContentBlock {
   type: string
-  text?: string
-  mimeType?: string
+  text?: string | undefined
+  mimeType?: string | undefined
+  /** image 块携带的 base64 数据（bridge 不消费，只声明形状）。 */
+  data?: string | undefined
 }
 
 /** tools/call 的结果（SDK 可能返回 legacy toolResult 形状，见 executor）。 */
 export interface McpCallToolResult {
-  content?: McpContentBlock[]
-  isError?: boolean
+  content?: McpContentBlock[] | undefined
+  isError?: boolean | undefined
+  /** SDK 兼容形状（legacy server 返回 toolResult 而非 content）。 */
+  toolResult?: unknown
 }
 
 /**
@@ -71,7 +77,8 @@ export interface McpCallToolResult {
  */
 export interface McpClientLike {
   listTools(params: { cursor?: string }): Promise<McpListToolsResult>
-  callTool(params: { name: string; arguments: Record<string, unknown> }): Promise<McpCallToolResult>
+  /** SDK 的 arguments 可选（协议允许省略）；bridge 总是显式传递。 */
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpCallToolResult>
 }
 
 /** 一代工具注册的撤销函数表：公开名 → 撤销（幂等）。 */
