@@ -61,6 +61,26 @@
   测试 `web-demo-real.test.ts` → `web-demo.test.ts`。所有活文档（根/包 README、
   M4/M5 教程、my-ws-client、M4/M5 spec 的命令引用）已同步；notes 历史记录不改。
 
+## M6 spec 定稿快照（2026-08-16 增补）
+
+- **状态**：M6 spec 已定稿（`docs/milestones/M6.md` 置 `proposed`），由用户指令启动。
+- **背景**：用户要求审计"所有注册是否可逆"。审计结论：cordis 托管的注册
+  （provide/plugin/on）与 webHost 的服务器收尾天然可逆；但**自建注册表不可逆**——
+  ToolsService/SkillsService/RpcBridge/SlotRegistry 只有 register 没有撤销，
+  bash/fs/skillTool/ui 插件全裸注册；client 订阅链（store→bridge→transport）从不
+  退订；webHost 4 个 RPC handler 裸注册；Session 卸载不排空落盘；loop 句柄不随
+  fiber 摘除。实测复现：卸载 bashTool fiber 后 `tools.list()` 仍含 bash。
+- **决策（M6 spec 预拍板七条）**：①统一模式"注册返回幂等撤销函数 + 注册方挂
+  ctx.effect"（不新增按名 unregister API）；②client 订阅链清理归 clientShell
+  （装配者），store 增幂等 dispose()，createBridgeClient 保存取消函数、close 幂等；
+  ③webHost 4 个 handler 挂 effect（注入桥路径也必须正确撤销）；④会话卸载 = 落盘
+  排空（cordis dispose 事件是否被 await 由测试实证，否则改 manager 追踪）；
+  ⑤agent-loop 句柄配 effect delete（对称注册）；⑥每个注册表一组 HMR-safety 测试
+  （上游 testing.md 纪律），契约测试同步增撤销语义；⑦不做 HMR 运行时本身
+  （backlog #11 只备前置）。
+- **任务拆解**：7 个任务按 TDD 顺序（tools → skill → web → client → session/agent
+  → 全链路回归 → demo+教程+文档）。详见 `docs/milestones/M6.md`。
+
 ## M5 完成快照（2026-08-16 增补）
 
 - **状态**：M5 已实现并通过验收（全仓 261 测试全绿（node+jsdom 双 workspace，11 包
