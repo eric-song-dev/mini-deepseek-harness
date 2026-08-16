@@ -144,6 +144,27 @@ describe('RpcBridge seam（M4：连接管理 + 请求分发 + 事件推送的抽
     expect(() => bridge.handle('dup', () => 'b')).toThrow(/已注册/)
   })
 
+  it('handle 返回幂等撤销函数：撤销后请求得到 UnknownMethodError，同名可重注册（M6）', async () => {
+    const bridge = createRpcBridge()
+    const client = scriptedClient()
+    const off = bridge.handle('echo', () => 'ok')
+    bridge.accept(client.hostSide)
+
+    client.request('r-1', 'echo')
+    await client.waitFor((m) => m.kind === 'response' && m.requestId === 'r-1')
+
+    off()
+    off() // 幂等
+
+    client.request('r-2', 'echo')
+    const revoked = await client.waitFor((m) => m.kind === 'response' && m.requestId === 'r-2')
+    expect(revoked).toMatchObject({ ok: false, error: { name: 'UnknownMethodError' } })
+
+    bridge.handle('echo', () => 'v2')
+    client.request('r-3', 'echo')
+    await expect(client.waitFor((m) => m.kind === 'response' && m.requestId === 'r-3')).resolves.toMatchObject({ ok: true, result: 'v2' })
+  })
+
   it('断线清理：连接关闭后连接数下降，pushEvent 对已断连接不抛错', async () => {
     const bridge = createRpcBridge()
     const clientA = scriptedClient()

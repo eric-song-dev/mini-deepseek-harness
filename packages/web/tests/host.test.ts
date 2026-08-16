@@ -73,7 +73,7 @@ async function makeHost(options: {
   if (options.systemPrompt !== undefined) webOptions.systemPrompt = options.systemPrompt
   const fiber = await ctx.plugin(webHost, webOptions)
   const handle: WebHostHandle = fiber.ctx['web-host']
-  return { ctx, dispose, client, handle, dir }
+  return { ctx, dispose, client, handle, webFiber: fiber, dir }
 }
 
 async function okResult(response: ResponseMessage): Promise<unknown> {
@@ -268,6 +268,24 @@ describe('webHost：SessionManager 门面 RPC（内存桥，M4）', () => {
       expect(send).toMatchObject({ ok: false, error: { name: 'FakeLlmExhaustedError' } })
       expect(host.client.events().map((m) => m.event.type)).toEqual(['turn/start', 'user', 'turn/end'])
       expect(host.client.events().at(-1)!.event.payload).toEqual({ reason: 'crash' })
+    } finally {
+      await host.dispose()
+    }
+  })
+
+  it('webHost 卸载即撤销 4 个 RPC handler（M6 注册可逆）：注入桥在卸载后回 UnknownMethodError', async () => {
+    const host = await makeHost()
+    const bridge = host.ctx['rpc-bridge']
+    try {
+      expect((await host.client.request('session.list')).ok).toBe(true)
+
+      // 只卸载 webHost 插件本体（不是整个根 ctx）
+      await host.webFiber.dispose()
+
+      const after = await host.client.request('session.list')
+      expect(after).toMatchObject({ ok: false, error: { name: 'UnknownMethodError' } })
+      // 注入的桥不属于插件：连接仍在、桥本身可用（只是方法被撤销）
+      expect(bridge.connectionCount).toBe(1)
     } finally {
       await host.dispose()
     }
