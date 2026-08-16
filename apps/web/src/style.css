@@ -52,6 +52,9 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* 高度链第一环：网格项允许低于内容高度，1fr 行才不会被长聊天撑破 100vh，
+     滚动由各面板内部接管，extras（轨迹）区始终留在视口内 */
+  min-height: 0;
   border-right: 1px solid var(--border);
   background: var(--panel);
 }
@@ -101,7 +104,10 @@ body {
 .dsh-conversation {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* 高度链第二环：填满区域并允许收缩（配合 .dsh-area 的 min-height:0），
+     这样 .dsh-messages 的 overflow-y:auto 才会生效——聊天区自己出滚动条 */
+  flex: 1;
+  min-height: 0;
 }
 
 .dsh-messages {
