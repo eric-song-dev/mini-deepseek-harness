@@ -41,6 +41,21 @@ async function makeHarness(options: {
 }
 
 describe('agentLoop（全仓唯一具体循环逻辑，M2）', () => {
+  it('agent-loop 句柄随 fiber dispose 摘除（M6 注册可逆：注册与撤销对称）', async () => {
+    const { session, dispose } = await makeHarness()
+    try {
+      const fiber = await session.ctx.plugin(agentLoop)
+      const loopCtx = fiber.ctx as Record<string, unknown>
+      expect(loopCtx['agent-loop']).toBeDefined()
+
+      await fiber.dispose()
+
+      expect(loopCtx['agent-loop']).toBeUndefined()
+    } finally {
+      await dispose()
+    }
+  })
+
   it('单轮 chat 落完整 turn 序列：turn/start → user → assistant → turn/end(done)，载荷无损', async () => {
     const { session, fake, loop, dispose } = await makeHarness({ replies: [{ content: '你好呀！' }] })
     try {
