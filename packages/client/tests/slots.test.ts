@@ -30,4 +30,16 @@ describe('Slot 注册表（M4：UI 注册点，框架无关）', () => {
     expect(registry.get('conversation')).toEqual(['一段描述'])
     expect(registry.get('session-list')).toEqual([42])
   })
+
+  it('register 返回幂等撤销函数：撤销后 get 空、slots 不含该名，同名可重注册（M6）', () => {
+    const registry = createSlotRegistry()
+    const off = registry.register('session-list', { render: 'A' })
+    expect(registry.get('session-list')).toEqual([{ render: 'A' }])
+    off()
+    off()
+    expect(registry.get('session-list')).toEqual([])
+    expect(registry.slots()).toEqual([])
+    registry.register('session-list', { render: 'B' })
+    expect(registry.get('session-list')).toEqual([{ render: 'B' }])
+  })
 })

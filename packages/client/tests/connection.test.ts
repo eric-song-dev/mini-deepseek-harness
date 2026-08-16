@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRpcBridge, memoryConnectionPair } from '@mini-dsh/web'
 import type { SessionEvent } from '@mini-dsh/session'
 import { createBridgeClient, RpcError, wsClientBridge } from '@mini-dsh/client'
+import type { ClientTransport } from '@mini-dsh/client'
 
 /** scripted host：内存直连的桥 + 可编程 handler（client 测试零网络的关键）。 */
 function scriptedHost() {
@@ -59,6 +60,45 @@ describe('createBridgeClient（client 连接，M4）', () => {
     const pending = client.request('hang')
     client.close()
     await expect(pending).rejects.toMatchObject({ name: 'ConnectionClosedError' })
+  })
+
+  it('close() 幂等：摘除 transport 的 message/close 监听器、清空事件订阅、未决请求 reject（M6）', async () => {
+    let messageListeners = 0
+    let closeListeners = 0
+    let transportClosed = 0
+    const transport: ClientTransport = {
+      send() {},
+      onMessage() {
+        messageListeners++
+        return () => {
+          messageListeners--
+        }
+      },
+      onClose() {
+        closeListeners++
+        return () => {
+          closeListeners--
+        }
+      },
+      close() {
+        transportClosed++
+      },
+    }
+    const client = createBridgeClient(transport)
+    client.onEvent(() => {})
+    const pending = client.request('hang')
+    expect(messageListeners).toBe(1)
+    expect(closeListeners).toBe(1)
+
+    client.close()
+    client.close()
+
+    await expect(pending).rejects.toMatchObject({ name: 'ConnectionClosedError' })
+    expect(messageListeners).toBe(0)
+    expect(closeListeners).toBe(0)
+    expect(transportClosed).toBe(1) // transport.close 只调一次
+    // close 后新请求立即 reject（不发往已死 transport）
+    await expect(client.request('x')).rejects.toMatchObject({ name: 'ConnectionClosedError' })
   })
 })
 

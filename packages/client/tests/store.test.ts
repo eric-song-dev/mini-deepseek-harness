@@ -26,6 +26,9 @@ function scriptedBridge() {
   return {
     bridge,
     requests,
+    handlerCount() {
+      return eventHandlers.size
+    },
     respond(method: string, value: unknown | ((params: unknown) => unknown)) {
       responses.set(method, value)
     },
@@ -137,5 +140,23 @@ describe('ClientSessionStore（M4：client 侧的日志投影缓存）', () => {
     off()
     script.emit('s1', ev(3, 'user', { content: '二' }))
     expect(notified).toBe(1)
+  })
+
+  it('dispose() 幂等：退订 bridge.onEvent（订阅真的摘除）并清空 store 监听器，之后事件不再进 store（M6）', async () => {
+    const script = scriptedBridge()
+    script.respond('session.create', () => ({ meta: meta('s1'), events: [header(meta('s1'))] }))
+    const store = createClientSessionStore(script.bridge)
+    await store.create('s')
+    let notified = 0
+    store.subscribe(() => notified++)
+    expect(script.handlerCount()).toBe(1)
+
+    store.dispose()
+    store.dispose()
+
+    expect(script.handlerCount()).toBe(0)
+    script.emit('s1', ev(2, 'user', { content: '迟到的事件' }))
+    expect(store.events).toHaveLength(1) // dispose 后不再追加
+    expect(notified).toBe(0) // 监听器已清空
   })
 })
