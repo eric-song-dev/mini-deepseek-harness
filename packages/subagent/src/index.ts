@@ -1,4 +1,9 @@
 import 'cordis'
+import type {
+  SubagentProvider,
+  SubagentRunEndInfo,
+  SubagentRunInfo,
+} from './types'
 
 export { SubagentError, SubagentRuntime } from './service'
 export type { SubagentsService, Unregister } from './service'
