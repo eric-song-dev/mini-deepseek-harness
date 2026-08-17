@@ -1,0 +1,10 @@
+# M10 演示 profile：加插件行即获 web_search 能力（"一切皆为插件"）。
+# 三层拆分清晰可见：tools 注册表（依赖）→ web 能力 seam → 提供方插件 → 消费方工具。
+# 换提供方 = 换掉 fake 那一行（如换成 deepseekWebSearch）；模型侧（web_search 工具）零改动。
+#
+# 用法（零 key 可跑）：pnpm demo:kernel packages/web-search/examples/websearch.profile.yml
+plugins:
+  - name: ./plugins/tools.ts
+  - name: ./plugins/web.ts
+  - name: ./plugins/fake.ts
+  - name: ./plugins/tool.ts
