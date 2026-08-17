@@ -106,6 +106,7 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         content: '',
         toolCalls: [{ id: 'old', name: 'bash', arguments: { command: 'ls' } }],
       },
+      // 错误结果紧跟悬空的 assistant 声明（wire 要求 tool 结果直接紧随）
       { role: 'tool', toolCallId: 'old', content: '{"isError":true,"content":"工具结果丢失：日志中该调用没有结果记录"}' },
       { role: 'user', content: '第二轮' },
       {
