@@ -7,6 +7,7 @@ import { bashTool, toolRegistry } from '@mini-dsh/tools'
 import { forkProvider, spawnProvider, SubagentRuntime, toolSubagent } from '@mini-dsh/subagent'
 import { toolWorkflow, WorkflowEngine } from '@mini-dsh/workflow'
 import { mcpClient } from '@mini-dsh/mcp'
+import { deepseekWebSearch, fakeWebSearch, webRuntime, webSearchTool } from '@mini-dsh/web-search'
 import { createFakeLlm } from '@mini-dsh/test-support'
 import { datedSystemPrompt } from '@mini-dsh/agent'
 import { webHost } from '@mini-dsh/web'
@@ -27,6 +28,12 @@ import type { RpcBridge, WebHostHandle } from '@mini-dsh/web'
  * M9 起同时挂 mcp-client（fixture server）：外部 MCP server 的工具（mcp__fixture__*）
  * 与本地工具同形态出现在浏览器 tool 卡片——能力接入零 client 改动；配置不在 Web
  * （MCP 配置 UI 是裁剪项）。fake 台词本第二轮调 mcp__fixture__add（真协议真子进程）。
+ *
+ * M10 起同时挂 web search 三层（能力 seam + 提供方 + 工具）：fake 模式挂
+ * fakeWebSearch（零 key，台词本第三轮调 web_search），real 模式挂
+ * deepseekWebSearch（读 DEEPSEEK_API_KEY，无 key 时 available()=false——工具仍在、
+ * 模型若调用会得到可读 {error} 结果：稳定注册在浏览器可见）。同一个 web_search
+ * 工具，换提供方只换一行——LLM seam 之外第二个"换 provider 不改消费方"的示范。
  */
 
 /** 与 web demo 同仓的玩具 MCP server（真 stdio 协议，零 key）。 */
@@ -91,6 +98,15 @@ export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['repli
     chunks: ['刚才那个工具卡片', '是外部 MCP server 的 add：', '我调了它，2 + 3 = 5。'],
     chunkDelay: 45,
   }
+  // 第三轮：调 web_search（零 key：fakeWebSearch 假提供方）——
+  // 浏览器 tool 卡片上出现 web_search，结果与轨迹面板里的结构化 sources 同源。
+  const webSearchCall = {
+    toolCalls: [{ id: 's1', name: 'web_search', arguments: { query: '事件溯源 event sourcing' } }],
+  }
+  const webSearchAnswer = {
+    chunks: ['刚才那个工具卡片是', 'web_search：搜索由', 'fakeWebSearch 假提供方返回。'],
+    chunkDelay: 45,
+  }
   const bashCall = {
     toolCalls: [{ id: 'c1', name: 'bash', arguments: { command: 'echo 你好，我是工具卡片' } }],
   }
@@ -99,6 +115,7 @@ export function fakeWebDemoReplies(): Parameters<typeof createFakeLlm>[0]['repli
     chunkDelay: 45,
   }
   return [delegationCall, childToolCall, childAnswer, parentAnswer, mcpAddCall, mcpAnswer,
+    webSearchCall, webSearchAnswer,
     ...Array.from({ length: 5 }, () => [bashCall, streamReply]).flat()]
 }
 
@@ -125,6 +142,10 @@ export async function createWebDemoRuntime(options: WebDemoRuntimeOptions): Prom
     command: process.execPath,
     args: [fileURLToPath(FIXTURE_SERVER_URL)],
   })
+  // M10：web search 三层——seam 与工具常挂；提供方按 LLM 模式换（见下方分支）。
+  // 能力 seam + 消费方工具是稳定注册：提供方缺失/无 key 时工具仍在。
+  await ctx.plugin(webRuntime)
+  await ctx.plugin(webSearchTool)
 
   // LLM seam 的两种 provider：换一行 = 假变真（其余插件零改动）
   if (options.llm === 'real') {
@@ -133,8 +154,13 @@ export async function createWebDemoRuntime(options: WebDemoRuntimeOptions): Prom
     if (options.baseUrl !== undefined) openAiOptions.baseUrl = options.baseUrl
     if (options.model !== undefined) openAiOptions.model = options.model
     await ctx.plugin(openAiLlm, openAiOptions)
+    // 真提供方（读 DEEPSEEK_API_KEY）：无 key 时 available()=false，模型若调
+    // web_search 会得到可读 {error} 结果——稳定注册在浏览器可见；有 key 即真搜索。
+    await ctx.plugin(deepseekWebSearch)
   } else {
     await ctx.plugin(provideLlm, createFakeLlm({ replies: fakeWebDemoReplies() }))
+    // 假提供方：台词本第三轮的 web_search 由它回答，零 key 全链路可回放。
+    await ctx.plugin(fakeWebSearch)
   }
 
   // 系统提示注入当前时间（post-MVP）：模型不知道"今天几号"的确定性兜底。

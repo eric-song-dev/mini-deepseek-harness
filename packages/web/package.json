@@ -22,6 +22,7 @@
     "@types/ws": "^8.5.10",
     "@mini-dsh/subagent": "workspace:*",
     "@mini-dsh/workflow": "workspace:*",
-    "@mini-dsh/mcp": "workspace:*"
+    "@mini-dsh/mcp": "workspace:*",
+    "@mini-dsh/web-search": "workspace:*"
   }
 }
