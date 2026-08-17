@@ -10,7 +10,7 @@
  *   在途同步完成后其结果交给 disposeResult 回收、绝不 commit。
  */
 
-export interface SyncQueueOptions<T> {
+interface SyncQueueOptions<T> {
   /** 一次同步：读取当前持有状态、执行、返回新结果。由队列保证串行执行，绝不并发。 */
   sync: () => Promise<T>
   /** 同步成功且代仍有效时提交结果（更新外部持有）。 */
@@ -19,7 +19,7 @@ export interface SyncQueueOptions<T> {
   disposeResult: (result: T) => void
 }
 
-export interface SyncQueue<T> {
+interface SyncQueue<T> {
   /** 入队一次同步；resolve = 该次尝试已结算（被跳过也算结算）；sync 抛错则 reject。 */
   enqueue(): Promise<void>
   /** 使当前代失效：未开始的同步跳过；在途同步完成后其结果被回收、不提交。 */

@@ -2,7 +2,7 @@ import type { AssistantEventPayload, ToolCallPayload, ToolEventPayload, UserEven
 import type { SessionEvent } from './events'
 
 /** 投影出的工具调用（与 llm 包 ToolCall 结构相同）。 */
-export interface ProjectedToolCall {
+interface ProjectedToolCall {
   id: string
   name: string
   arguments: Record<string, unknown>

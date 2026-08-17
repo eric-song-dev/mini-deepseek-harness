@@ -1,5 +1,4 @@
 import './skills'
-import './frontmatter'
 
 export { createSkillsRegistry, provideSkills, InvalidSkillError, isSkillName, UnknownSkillError } from './skills'
 export type { Skill, SkillsService, Unregister } from './skills'
