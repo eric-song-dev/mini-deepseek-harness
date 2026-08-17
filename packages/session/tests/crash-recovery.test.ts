@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Context } from 'cordis'
 import { createTestContext } from '@mini-dsh/test-support'
-import { jsonlPersistence, SessionManager } from '@mini-dsh/session'
+import { jsonlPersistence, projectMessages, SessionManager } from '@mini-dsh/session'
 
 let dir: string
 beforeEach(async () => {
@@ -87,5 +87,53 @@ describe('崩溃恢复（M1 核心契约）', () => {
       'session/created', 'turn/start', 'user', 'turn/end',
     ])
     await again.dispose()
+  })
+
+  it('崩溃落在工具执行中：resume 合成 isError 工具结果 + turn/end 并全部落盘，transcript 恢复 wire 合法', async () => {
+    // 现场：assistant 声明工具调用 → tool 调用事件已落盘 → 进程死在结果返回前
+    const id = 's-dangling-tool'
+    const createdAt = Date.now()
+    const lines = [
+      { seq: 1, type: 'session/created', ts: createdAt, payload: { id, title: '工具崩溃现场', createdAt } },
+      { seq: 2, type: 'turn/start', ts: createdAt + 1 },
+      { seq: 3, type: 'user', ts: createdAt + 2, payload: { content: '跑个命令' } },
+      {
+        seq: 4, type: 'assistant', ts: createdAt + 3,
+        payload: { content: '', toolCalls: [{ id: 'c1', name: 'bash', arguments: { command: 'date' } }] },
+      },
+      { seq: 5, type: 'tool', ts: createdAt + 4, payload: { name: 'bash', input: { command: 'date' } } },
+    ]
+    await writeFile(join(dir, `${id}.jsonl`), lines.map((line) => JSON.stringify(line)).join('\n') + '\n')
+
+    const { manager, dispose } = await boot()
+    try {
+      const session = await manager.resume(id)
+      const log = session.log
+      expect(log.map((e) => e.type)).toEqual([
+        'session/created', 'turn/start', 'user', 'assistant', 'tool', 'tool', 'turn/end',
+      ])
+      const synthesized = log[5]!
+      expect(synthesized.payload).toEqual({
+        name: 'bash',
+        input: { command: 'date' },
+        output: { isError: true, content: '工具结果丢失：进程在结果返回前崩溃' },
+      })
+      expect(log[6]!.payload).toEqual({ reason: 'crash' })
+
+      // 两个补写事件都已持久化（读文件最后两行）
+      const onDisk = (await readFile(join(dir, `${id}.jsonl`), 'utf8')).trim().split('\n')
+      expect(JSON.parse(onDisk.at(-2)!)).toMatchObject({ seq: 6, type: 'tool', payload: { name: 'bash' } })
+      expect(JSON.parse(onDisk.at(-1)!)).toMatchObject({ seq: 7, type: 'turn/end', payload: { reason: 'crash' } })
+
+      // 恢复后的模型输入（projectMessages）以配对的 tool 结果收尾——wire 合法
+      const messages = projectMessages(session.log)
+      expect(messages.at(-1)).toEqual({
+        role: 'tool',
+        toolCallId: 'c1',
+        content: '{"isError":true,"content":"工具结果丢失：进程在结果返回前崩溃"}',
+      })
+    } finally {
+      await dispose()
+    }
   })
 })

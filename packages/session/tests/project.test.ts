@@ -54,7 +54,7 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
     ])
   })
 
-  it('assistant 带 toolCalls 时原样映射；tool 调用事件（无 output）跳过', () => {
+  it('悬空工具调用（有 toolCalls 声明但结果缺失）在投影末尾补 isError 错误结果：transcript 始终 wire 合法', () => {
     const events: SessionEvent[] = [
       { seq: 2, type: 'user', ts: 1, payload: { content: '读文件' } },
       {
@@ -73,6 +73,47 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         content: '',
         toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }],
       },
+      { role: 'tool', toolCallId: 'c1', content: '{"isError":true,"content":"工具结果丢失：日志中该调用没有结果记录"}' },
+    ])
+  })
+
+  it('前一轮悬空调用 + 新一轮 assistant(toolCalls)：旧调用先补错误结果再进入新 assistant（配对不错位）', () => {
+    const events: SessionEvent[] = [
+      { seq: 2, type: 'user', ts: 1, payload: { content: '第一轮' } },
+      {
+        seq: 3,
+        type: 'assistant',
+        ts: 2,
+        payload: { content: '', toolCalls: [{ id: 'old', name: 'bash', arguments: { command: 'ls' } }] },
+      },
+      // 结果没落（crash/limit），旧轮就此结束
+      { seq: 4, type: 'turn/end', ts: 3, payload: { reason: 'limit' } },
+      { seq: 5, type: 'turn/start', ts: 4, payload: undefined },
+      { seq: 6, type: 'user', ts: 5, payload: { content: '第二轮' } },
+      {
+        seq: 7,
+        type: 'assistant',
+        ts: 6,
+        payload: { content: '', toolCalls: [{ id: 'new', name: 'read_file', arguments: { path: 'b.txt' } }] },
+      },
+      { seq: 8, type: 'tool', ts: 7, payload: { name: 'read_file', input: { path: 'b.txt' }, output: { content: 'ok' } } },
+    ]
+
+    expect(projectMessages(events)).toEqual([
+      { role: 'user', content: '第一轮' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'old', name: 'bash', arguments: { command: 'ls' } }],
+      },
+      { role: 'tool', toolCallId: 'old', content: '{"isError":true,"content":"工具结果丢失：日志中该调用没有结果记录"}' },
+      { role: 'user', content: '第二轮' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'new', name: 'read_file', arguments: { path: 'b.txt' } }],
+      },
+      { role: 'tool', toolCallId: 'new', content: '{"content":"ok"}' },
     ])
   })
 
