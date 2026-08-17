@@ -4,6 +4,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
 import { resolveConfig } from './config'
 import type { McpConfig } from './config'
+import { createSyncQueue } from './sync-queue'
 import { syncTools } from './tools'
 import type { ToolDisposers } from './tools'
 
@@ -73,6 +74,21 @@ export async function apply(ctx: Context, rawConfig: unknown): Promise<void> {
 
   let disposers: ToolDisposers = new Map()
 
+  // 重同步走代际同步队列（M9 修复）：串行化 + 连接代栅栏。
+  // - 串行化：list_changed 连发时逐个执行，每次 sync 读到的都是上一次 commit 后的
+  //   持有状态，不会并发 dispose/register 而丢一代撤销函数；
+  // - 代栅栏：断开（onclose）revoke 后，未开始的重同步跳过；在途重同步完成后其
+  //   新注册的一代被回收（死工具不回流注册表）。
+  const syncQueue = createSyncQueue<ToolDisposers>({
+    sync: () => syncTools(client, ctx.tools, config.serverName, disposers),
+    commit: (next) => {
+      disposers = next
+    },
+    disposeResult: (stale) => {
+      for (const off of stale.values()) off()
+    },
+  })
+
   try {
     await client.connect(transport)
   } catch (error) {
@@ -81,8 +97,9 @@ export async function apply(ctx: Context, rawConfig: unknown): Promise<void> {
     throw error
   }
 
-  // 断开即撤销：子进程退出 → 该 server 的工具全部消失（幂等，日志可见）。
+  // 断开即撤销：子进程退出 → 代失效 + 该 server 的工具全部消失（幂等，日志可见）。
   client.onclose = () => {
+    syncQueue.revoke()
     if (disposers.size === 0) return
     ctx.logger.warn('mcp-client(%s): 连接断开，撤销 %d 个工具注册', config.serverName, disposers.size)
     for (const off of disposers.values()) off()
@@ -95,20 +112,16 @@ export async function apply(ctx: Context, rawConfig: unknown): Promise<void> {
     ctx.logger.warn('mcp-client(%s): 连接错误：%s', config.serverName, String(error))
   }
 
-  // list_changed → 重同步：两阶段同步保证失败时旧代原样（fetch 失败不碰注册表）。
+  // list_changed → 重同步（经队列串行执行；失败保留旧代——fetch 失败不碰注册表）。
   client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
-    void (async () => {
-      try {
-        disposers = await syncTools(client, ctx.tools, config.serverName, disposers)
-      } catch (error) {
-        ctx.logger.error('mcp-client(%s): 重新同步失败，保留旧代：%s', config.serverName, String(error))
-      }
-    })()
+    void syncQueue.enqueue().catch((error) => {
+      ctx.logger.error('mcp-client(%s): 重新同步失败：%s', config.serverName, String(error))
+    })
   })
 
   // 初始同步：失败 = 插件启动失败（fail-fast 二态已裁剪——mini 恒 throw）。
   try {
-    disposers = await syncTools(client, ctx.tools, config.serverName, disposers)
+    await syncQueue.enqueue()
   } catch (error) {
     await safeClose(client)
     throw error
