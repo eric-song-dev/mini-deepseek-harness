@@ -78,6 +78,15 @@ describe('loadProfile', () => {
   it('插件行缺少 name 抛 LoadProfileError', async () => {
     await expect(loadProfile(profile('missing-name'))).rejects.toThrow(LoadProfileError)
   })
+
+  it('装载失败时已装载插件的 effect 清理被执行（不泄漏 ctx 与注册）', async () => {
+    const probe = await import('./fixtures/plugins/cleanup-probe')
+    probe.resetCleanupProbe()
+
+    await expect(loadProfile(profile('leak-on-fail'))).rejects.toThrow(/does-not-exist/)
+    // 第一行插件已装载；第二行失败后它的 effect 清理必须跑（卸载即撤销）
+    expect(probe.wasCleaned()).toBe(true)
+  })
 })
 
 describe('startProfile', () => {

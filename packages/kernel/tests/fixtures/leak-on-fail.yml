@@ -1,0 +1,3 @@
+plugins:
+  - name: ./plugins/cleanup-probe.ts
+  - name: ./plugins/does-not-exist.ts
