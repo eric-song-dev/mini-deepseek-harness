@@ -47,9 +47,11 @@ loop.chat('你好')
 
 3. **工具声明不经 system prompt**：每步把 `tools.list()` 经 `ChatOptions.tools` 传给模型
    （OpenAI 兼容协议原生参数）——注册了什么工具模型自动看到什么，注册新工具零 prompt 改动。
-4. **三条出口都可观测**：`llm.chat` / 工具执行 rejection → `turn/end {reason:'crash'}`；
-   步数超限 → `turn/end {reason:'limit'}`；两条路径都把原错误向上抛——不吞错、不虚构内容。
-   M1 的崩溃恢复补的正是 crash 同款 reason。
+4. **三条出口都可观测**：工具执行失败（含未知工具）→ **isError 结果回填模型**
+   （`{isError:true, content}`，模型看到失败原因可自行纠正，轮次继续——与 bash 的
+   exit code 同款纪律）；`llm.chat` rejection → `turn/end {reason:'crash'}`；
+   步数超限 → `turn/end {reason:'limit'}`。crash/limit 两条路径都把原错误向上抛——
+   不吞错、不虚构内容。M1 的崩溃恢复补的正是 crash 同款 reason。
 
 另外：并发 `chat` 会被内部 promise 链**串行化**（一轮未结束不开始下一轮，两轮日志不会交错）。
 
@@ -82,6 +84,6 @@ pnpm demo:real --ask "用一句话介绍你自己"   # 真 DeepSeek API：adapte
 | 文件 | 内容 |
 |---|---|
 | `tests/loop.test.ts` | turn 序列、模型输入 == 日志投影、systemPrompt、多轮、崩溃、串行化、resume 历史、并存会话隔离 |
-| `tests/tool-loop.test.ts` | 工具循环：多步日志序列、结果回填、tools 声明透传、maxSteps(limit)、未知工具(crash)、cwd 来源、无工具回归 |
+| `tests/tool-loop.test.ts` | 工具循环：多步日志序列、结果回填、tools 声明透传、maxSteps(limit)、未知工具/工具抛错（isError 结果回填）、cwd 来源、无工具回归 |
 | `tests/tool-e2e.test.ts` | 端到端：真 bash/fs 读→改→答、bash 失败结果、工具往返后重启 resume |
 | `tests/my-messages.test.ts` / `tests/my-tool-loop.test.ts` | M2 / M3 教程断言练习（红绿翻转） |

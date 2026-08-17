@@ -362,9 +362,10 @@ pnpm vitest run packages/agent/tests/my-tool-loop.test.ts
 ## 7. 常见问题
 
 **Q：模型要调用不存在的工具怎么办？**
-loop 抛 `UnknownToolError`，该轮落 `turn/end {reason:'crash'}`，错误上抛给调用方。
-日志里会留下：assistant（要了工具）→ tool（调用事件，**没有**结果事件）。轨迹检查器
-一眼就能看出"这轮死在执行前"。
+loop 把 `UnknownToolError` 归一化成 **isError 结果**回填模型（`{isError:true, content}`），
+轮次继续——模型看到失败原因可以换个工具名再试。日志里会留下：assistant（要了工具）→
+tool（调用事件）→ tool（结果事件，`output.isError === true`）。轨迹检查器一眼就能看出
+"这轮要了个不存在的工具，模型随后自行纠正了"。
 
 **Q：模型一次回复要多个工具（多个 tool_calls）？**
 M3 逐个**串行**执行：一个调用一个执行、一对事件。并行执行是 backlog。多个调用都执行完

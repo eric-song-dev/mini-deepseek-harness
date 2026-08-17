@@ -43,6 +43,11 @@ pre-execute hooks → execute（工具实现） → post-execute hooks
 **原样传播**（管线不吞错）。契约测试在 `tests/contracts/tools-contract.ts`，任何实现
 （默认注册表、将来的 MCP 注册表）都必须通过。
 
+> 消费方约定（agent loop）：loop 把 `execute` 的任何 rejection 归一化成
+> `{isError:true, content}` **结果**回填模型——工具错误是"结果"不是"异常"，模型看到
+> 失败原因可自行纠正（与 bash 的 exit code、MCP 的 isError 同款纪律）。seam 本身仍
+> 原样抛错：直接调用 `tools.execute` 的调用方拿到的还是 rejection。
+
 ## 工具集（MVP 四个）
 
 | 工具 | 输入 | 输出 | 要点 |

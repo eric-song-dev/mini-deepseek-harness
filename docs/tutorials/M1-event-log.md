@@ -145,6 +145,7 @@ start
 :resume(id);
 :persistence.load(id) 读回日志;
 if (日志里有未配对的 turn/start？) then (有：崩溃现场)
+  :为悬空的工具调用补 isError 结果（若崩溃落在工具执行中）;
   :补一条 turn/end，reason='crash'，seq=最后一条+1;
   :persistence.append 落盘（修复持久化）;
 else (没有：日志已闭合)
@@ -374,15 +375,16 @@ pnpm tsx packages/session/examples/my-resume.ts /tmp/my-sessions s-handmade
 真实系统靠事务/校验和，那是 SQLite 后端（backlog）的功课。
 
 **Q：一次会话两轮对话都没写 turn/end，能修几条？**
-MVP 假设单轮串行（M2 的 loop 也是串行的），修复逻辑只补一条。多轮并发是 M2 之后才可能出现
-的场景，届时再谈配对栈。
+MVP 假设单轮串行（M2 的 loop 也是串行的），修复逻辑只补**最后一轮**的 turn/end（以及它
+悬空的工具调用结果）。多轮并发是 M2 之后才可能出现的场景，届时再谈配对栈。
 
 ## 8. 小结
 
 - 会话 = 一段 **append-only 事件日志**；词汇（事件名 + 载荷）是类型层面的契约。
 - **emit → 桥接 → 日志** 让"日志 == 事件流的镜像"恒成立；日志是真源，一切视图都是投影。
 - 持久化是 **seam**：契约五件套 + JSONL 实现 + 可复用的契约测试，换后端零改动。
-- **崩溃恢复**：发现未闭合的 `turn/start` → 补一条 `turn/end {reason:'crash'}`，幂等。
+- **崩溃恢复**：发现未闭合的 `turn/start` → 补一条 `turn/end {reason:'crash'}`，幂等；
+  若崩溃落在工具执行中，还会先为没有结果的调用补一条 isError 工具结果。
 - 下一步 M2：agent loop 登场——它的每一动都会 emit 词汇事件，落进这段日志；M1 的
   `flush/resume` 是它"每一步都安全"的地基。
 

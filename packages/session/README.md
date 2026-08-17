@@ -41,6 +41,8 @@ UI 和测试就统一不了"看事件"。桥接保证：**日志内容 == 事件
   的第二套真相。
 - 崩溃恢复演示了日志为真的力量：进程被杀死后，光凭日志本身就能发现"这轮对话没说完"，
   resume 时补一条 `turn/end { reason: 'crash' }` 让日志重新闭合（幂等：补过就不再补）。
+  崩溃若落在工具执行中，还会为没有结果的调用**合成 isError 工具结果**（`{isError:true, content}`），
+  保证恢复后的模型输入仍是合法 transcript。
 
 ## seam：SessionPersistence + JSONL 后端
 
@@ -76,8 +78,8 @@ cordis 的子 ctx 沿原型链**共享**根 ctx 的事件总线实例。若不�
   `dispose()`（落盘排空 + 摘除桥接）。
 - `SessionManager`（cordis `Service`，`inject: ['session-persistence']`）：`create` /
   `resume`（含崩溃修复）/ `list`。
-- `repairDanglingTurn(events)`：崩溃修复的纯函数核心（有未配对的 `turn/start` → 补
-  `turn/end`），单独导出方便教学与测试。
+- `repairDanglingTurn(events)`：崩溃修复的纯函数核心（有未配对的 `turn/start` → 为悬空
+  工具调用合成 isError 结果 + 补 `turn/end`），单独导出方便教学与测试。
 - `createJsonlPersistence(options)` / `jsonlPersistence(ctx, options)`：后端工厂 / 插件。
 
 ### M2 增量：日志的两个新入口
