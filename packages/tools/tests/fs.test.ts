@@ -93,6 +93,27 @@ describe('文件工具', () => {
     await expect(readFile(path, 'utf8')).resolves.toBe('aa bb aa')
   })
 
+  it('edit：newText 含 $ 特殊序列时按字面替换（$&/$$/$`/$\' 不解释为替换模式）', async () => {
+    const path = resolve(dir, 'price.md')
+    await writeFile(path, 'a: 10\nb: alpha\nc: beta\nd: gamma\n', 'utf8')
+
+    // $& 在替换串里是"匹配到的文本"：字面替换必须写进文件的是两个字符 "$&"
+    await edit.execute({ path: 'price.md', oldText: '10', newText: '$&' }, { cwd: dir })
+    await expect(readFile(path, 'utf8')).resolves.toContain('a: $&\n')
+
+    // $$ 会被解释成"一个 $"：字面替换必须留下两个 $
+    await edit.execute({ path: 'price.md', oldText: 'alpha', newText: '$$' }, { cwd: dir })
+    await expect(readFile(path, 'utf8')).resolves.toContain('b: $$\n')
+
+    // $` 是"匹配位置之前的文本"：字面替换必须原样写入
+    await edit.execute({ path: 'price.md', oldText: 'beta', newText: '$`' }, { cwd: dir })
+    await expect(readFile(path, 'utf8')).resolves.toContain('c: $`\n')
+
+    // $' 是"匹配位置之后的文本"：字面替换必须原样写入
+    await edit.execute({ path: 'price.md', oldText: 'gamma', newText: "$\'" }, { cwd: dir })
+    await expect(readFile(path, 'utf8')).resolves.toContain("d: $'\n")
+  })
+
   it('read/write/edit 工具插件把三个声明注册进 tools 服务', async () => {
     const { ctx, dispose } = await createTestContext()
     await ctx.plugin(toolRegistry)
