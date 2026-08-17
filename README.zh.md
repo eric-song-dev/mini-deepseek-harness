@@ -49,21 +49,21 @@ pnpm demo:real --ask "用一句话介绍你自己"  # 真 API 冒烟（唯一需
 
 | 包 | 一句话 |
 |---|---|
-| `packages/kernel` | 启动器 + profile 加载（`profile.yml` → cordis ctx），唯一"启动"的地方 |
-| `packages/session` | 事件词汇 + append-only 日志 + SessionPersistence seam + JSONL 后端（日志是真源） |
-| `packages/test-support` | 测试公共语言：测试 ctx、测试服务注入、事件断言、假 LLM |
-| `packages/llm` | LLM seam + OpenAI 兼容 adapter（默认 DeepSeek；Ollama/vLLM 通用；支持流式） |
-| `packages/agent` | agent loop：全仓唯一的"拿输入→调模型→写输出"循环，每个动作都落会话日志 |
-| `packages/tools` | Tools seam（注册表 + 执行管线 + approval hook 预留位）+ bash/文件读/写/编辑 |
-| `packages/web` | host：RpcBridge seam + HTTP/WS 桥 + SessionManager 门面 RPC |
-| `packages/client` | Client Slot seam + UI 插件：会话列表 / composer / 流式消息 / tool 卡片 / 轨迹面板 |
-| `packages/skill` | Skills seam（注册表 + filesystem 发现）+ skill 工具（模型按需检索技能） |
-| `packages/subagent` | Subagents seam（具名 provider 注册表）+ spawn/fork 提供方 + 委派工具 |
-| `packages/workflow` | WorkflowEngine seam（同线程脚本编排）+ workflow 工具（模型写扇出脚本） |
-| `packages/mcp` | MCP 客户端桥（stdio）：外部 MCP server 的工具以 `mcp__<server>__<tool>` 注册进 Tools |
-| `packages/web-search` | web 能力 seam（provider 注册表 + 执行时选择）+ fake/deepseek 双提供方 + web_search 工具 |
-| `packages/bundle-web` | web profile 组合：client-shell + UI 插件排成浏览器应用 |
-| `apps/web` | Web 客户端壳（Vite entry，只注入 bundle-web，不是独立应用） |
+| [`packages/kernel`](packages/kernel) | 启动器 + profile 加载（`profile.yml` → cordis ctx），唯一"启动"的地方 |
+| [`packages/session`](packages/session) | 事件词汇 + append-only 日志 + SessionPersistence seam + JSONL 后端（日志是真源） |
+| [`packages/test-support`](packages/test-support) | 测试公共语言：测试 ctx、测试服务注入、事件断言、假 LLM |
+| [`packages/llm`](packages/llm) | LLM seam + OpenAI 兼容 adapter（默认 DeepSeek；Ollama/vLLM 通用；支持流式） |
+| [`packages/agent`](packages/agent) | agent loop：全仓唯一的"拿输入→调模型→写输出"循环，每个动作都落会话日志 |
+| [`packages/tools`](packages/tools) | Tools seam（注册表 + 执行管线 + approval hook 预留位）+ bash/文件读/写/编辑 |
+| [`packages/web`](packages/web) | host：RpcBridge seam + HTTP/WS 桥 + SessionManager 门面 RPC |
+| [`packages/client`](packages/client) | Client Slot seam + UI 插件：会话列表 / composer / 流式消息 / tool 卡片 / 轨迹面板 |
+| [`packages/skill`](packages/skill) | Skills seam（注册表 + filesystem 发现）+ skill 工具（模型按需检索技能） |
+| [`packages/subagent`](packages/subagent) | Subagents seam（具名 provider 注册表）+ spawn/fork 提供方 + 委派工具 |
+| [`packages/workflow`](packages/workflow) | WorkflowEngine seam（同线程脚本编排）+ workflow 工具（模型写扇出脚本） |
+| [`packages/mcp`](packages/mcp) | MCP 客户端桥（stdio）：外部 MCP server 的工具以 `mcp__<server>__<tool>` 注册进 Tools |
+| [`packages/web-search`](packages/web-search) | web 能力 seam（provider 注册表 + 执行时选择）+ fake/deepseek 双提供方 + web_search 工具 |
+| [`packages/bundle-web`](packages/bundle-web) | web profile 组合：client-shell + UI 插件排成浏览器应用 |
+| [`apps/web`](apps/web) | Web 客户端壳（Vite entry，只注入 bundle-web，不是独立应用） |
 
 ## 文档
 
@@ -104,9 +104,9 @@ MVP（M0–M5）与 M6–M10 **全部完成**：
 - telemetry
 - 动态插件热加载
 
-详见 `docs/requirements.md` §6。
+- Backlog 详情：[`docs/requirements.md` §6](docs/requirements.md)
 
 ## 开发
 
-- TDD 纪律：`.agents/skills/tdd/SKILL.md`；`pnpm test` 与 `pnpm typecheck` 是合入门槛。
-- 决策与进度快照见 `.agents/notes/README.md` 状态指针。
+- TDD 纪律：[`.agents/skills/tdd/SKILL.md`](.agents/skills/tdd/SKILL.md)；`pnpm test` 与 `pnpm typecheck` 是合入门槛。
+- 决策与进度快照见 [`.agents/notes/README.md`](.agents/notes/README.md) 状态指针。

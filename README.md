@@ -47,21 +47,21 @@ For a real model, put `DEEPSEEK_API_KEY` in `.env` (or the environment) and run
 
 | Package | Purpose |
 |---|---|
-| `packages/kernel` | Launcher: loads a `profile.yml` into a CORDIS context |
-| `packages/session` | Event vocabulary + append-only log + `SessionPersistence` seam (JSONL backend) |
-| `packages/test-support` | Shared test vocabulary: test contexts, service injection, event assertions, fake LLM |
-| `packages/llm` | LLM seam + OpenAI-compatible adapter (DeepSeek default; Ollama/vLLM compatible) |
-| `packages/agent` | The single agent loop — input → model → output, every action logged |
-| `packages/tools` | Tools seam (registry + execution pipeline) + bash / file read·write·edit |
-| `packages/web` | Host: RPC bridge seam over HTTP/WebSocket + session façade |
-| `packages/client` | Client slot seam + UI plugins (session list, composer, streaming, tool cards) |
-| `packages/skill` | Skills seam (registry + filesystem discovery) + skill tool |
-| `packages/subagent` | Subagents seam (named provider registry) + spawn/fork providers + delegation tool |
-| `packages/workflow` | Workflow engine seam + workflow tool (model-authored orchestration scripts) |
-| `packages/mcp` | MCP client bridge (stdio): external server tools join the tool registry |
-| `packages/web-search` | Web-search seam (provider registry + runtime selection) + fake/DeepSeek providers |
-| `packages/bundle-web` | Web profile: client shell + UI plugins assembled into a browser app |
-| `apps/web` | Web client shell (Vite entry) |
+| [`packages/kernel`](packages/kernel) | Launcher: loads a `profile.yml` into a CORDIS context |
+| [`packages/session`](packages/session) | Event vocabulary + append-only log + `SessionPersistence` seam (JSONL backend) |
+| [`packages/test-support`](packages/test-support) | Shared test vocabulary: test contexts, service injection, event assertions, fake LLM |
+| [`packages/llm`](packages/llm) | LLM seam + OpenAI-compatible adapter (DeepSeek default; Ollama/vLLM compatible) |
+| [`packages/agent`](packages/agent) | The single agent loop — input → model → output, every action logged |
+| [`packages/tools`](packages/tools) | Tools seam (registry + execution pipeline) + bash / file read·write·edit |
+| [`packages/web`](packages/web) | Host: RPC bridge seam over HTTP/WebSocket + session façade |
+| [`packages/client`](packages/client) | Client slot seam + UI plugins (session list, composer, streaming, tool cards) |
+| [`packages/skill`](packages/skill) | Skills seam (registry + filesystem discovery) + skill tool |
+| [`packages/subagent`](packages/subagent) | Subagents seam (named provider registry) + spawn/fork providers + delegation tool |
+| [`packages/workflow`](packages/workflow) | Workflow engine seam + workflow tool (model-authored orchestration scripts) |
+| [`packages/mcp`](packages/mcp) | MCP client bridge (stdio): external server tools join the tool registry |
+| [`packages/web-search`](packages/web-search) | Web-search seam (provider registry + runtime selection) + fake/DeepSeek providers |
+| [`packages/bundle-web`](packages/bundle-web) | Web profile: client shell + UI plugins assembled into a browser app |
+| [`apps/web`](apps/web) | Web client shell (Vite entry) |
 
 ## Documentation
 
@@ -102,9 +102,9 @@ MVP (M0–M5) and M6–M10 are **complete**:
 - Telemetry
 - Dynamic plugin hot-reloading
 
-See `docs/requirements.md` §6.
+- Backlog details: [`docs/requirements.md` §6](docs/requirements.md)
 
 ## Development
 
-- TDD: `pnpm test` and `pnpm typecheck` are the merge gates (`.agents/skills/tdd/SKILL.md`).
+- TDD: `pnpm test` and `pnpm typecheck` are the merge gates ([`.agents/skills/tdd/SKILL.md`](.agents/skills/tdd/SKILL.md)).
 - Decisions and progress snapshots: [`.agents/notes/`](.agents/notes/README.md).
