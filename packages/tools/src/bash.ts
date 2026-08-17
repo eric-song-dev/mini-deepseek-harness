@@ -17,8 +17,8 @@ const execFileAsync = promisify(execFile)
 
 export interface BashInput {
   command: string
-  /** 工作目录；省略时用会话 cwd。 */
-  cwd?: string
+  /** 工作目录；省略时用会话 cwd（上游同款参数名 workdir）。 */
+  workdir?: string
 }
 
 export interface BashOutput {
@@ -36,16 +36,16 @@ export function createBashTool(): Tool {
         type: 'object',
         properties: {
           command: { type: 'string', description: '要执行的命令' },
-          cwd: { type: 'string', description: '工作目录（默认会话 cwd）' },
+          workdir: { type: 'string', description: '工作目录（默认会话 cwd）' },
         },
         required: ['command'],
       },
     },
     async execute(input: Record<string, unknown>, ctx) {
-      const { command, cwd } = input as unknown as BashInput
+      const { command, workdir } = input as unknown as BashInput
       try {
         const { stdout, stderr } = await execFileAsync('bash', ['-c', command], {
-          cwd: cwd ?? ctx.cwd,
+          cwd: workdir ?? ctx.cwd,
           encoding: 'utf8',
           // 教学版放宽到 10MB：stdout 超限会被截断抛错，宁可显式失败也不静默丢数据。
           maxBuffer: 10 * 1024 * 1024,
