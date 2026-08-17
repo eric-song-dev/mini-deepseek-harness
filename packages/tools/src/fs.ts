@@ -98,7 +98,9 @@ export function createEditFileTool(): Tool {
       if (occurrences > 1) {
         throw new Error(`edit_file：旧文本出现 ${occurrences} 次，不是唯一（${target}）`)
       }
-      await writeFile(target, text.replace(oldText, newText), 'utf8')
+      // 字面替换：函数替换器让 newText 里的 $& / $$ / $` / $' 按原文写入，
+      // 不被 String.replace 解释成替换模式（上游同款字面语义）。
+      await writeFile(target, text.replace(oldText, () => newText), 'utf8')
       return { path: target, replaced: true }
     },
   }
