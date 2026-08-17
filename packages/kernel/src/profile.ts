@@ -67,6 +67,7 @@ export function parseProfile(source: string): Profile {
 /**
  * 读取并装载一个 profile：逐行 import 插件模块 → 用 cordis 组装 ctx。
  * 每行失败都会抛 LoadProfileError（消息含行号与模块名）。
+ * 失败路径先 dispose 已装载部分（卸载即撤销，不泄漏 ctx），再上抛原始错误。
  */
 export async function loadProfile(profilePath: string): Promise<LoadedProfile> {
   let source: string
@@ -78,27 +79,38 @@ export async function loadProfile(profilePath: string): Promise<LoadedProfile> {
   const profile = parseProfile(source)
   const ctx = new Context()
   const baseDir = dirname(profilePath)
-  for (const [index, entry] of profile.plugins.entries()) {
-    const specifier = resolveSpecifier(entry.name, baseDir)
-    let mod: Record<string, unknown>
+  try {
+    for (const [index, entry] of profile.plugins.entries()) {
+      const specifier = resolveSpecifier(entry.name, baseDir)
+      let mod: Record<string, unknown>
+      try {
+        mod = (await import(specifier)) as Record<string, unknown>
+      } catch (cause) {
+        throw new LoadProfileError(`plugins 第 ${index + 1} 行（${entry.name}）模块加载失败: ${specifier}`, {
+          cause,
+        })
+      }
+      const plugin = extractPlugin(mod)
+      if (!plugin) {
+        throw new LoadProfileError(
+          `plugins 第 ${index + 1} 行（${entry.name}）没有导出插件（需要 default 或 apply）`,
+        )
+      }
+      try {
+        await ctx.plugin(plugin, entry.options)
+      } catch (cause) {
+        throw new LoadProfileError(`plugins 第 ${index + 1} 行（${entry.name}）装载失败`, { cause })
+      }
+    }
+  } catch (error) {
+    // 失败清理：已装载插件的 effect/服务/定时器随 fiber dispose 全部撤销
+    // （硬约束 6"一切注册皆可逆"的启动侧落地）。清理失败不掩盖原始错误。
     try {
-      mod = (await import(specifier)) as Record<string, unknown>
-    } catch (cause) {
-      throw new LoadProfileError(`plugins 第 ${index + 1} 行（${entry.name}）模块加载失败: ${specifier}`, {
-        cause,
-      })
+      await ctx.fiber.dispose()
+    } catch {
+      // 原始错误优先
     }
-    const plugin = extractPlugin(mod)
-    if (!plugin) {
-      throw new LoadProfileError(
-        `plugins 第 ${index + 1} 行（${entry.name}）没有导出插件（需要 default 或 apply）`,
-      )
-    }
-    try {
-      await ctx.plugin(plugin, entry.options)
-    } catch (cause) {
-      throw new LoadProfileError(`plugins 第 ${index + 1} 行（${entry.name}）装载失败`, { cause })
-    }
+    throw error
   }
   return {
     ctx,
