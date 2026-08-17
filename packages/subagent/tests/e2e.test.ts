@@ -19,7 +19,7 @@ import { toolWorkflow, WorkflowEngine } from '@mini-dsh/workflow'
  *   结果：父会话只多 tool 调用/结果事件（结果含子会话 id）；子会话 JSONL 独立、
  *   projectTurns 可完整回放（轨迹三件套不缺环）；
  * - workflow 脚本跑通 agent/parallel/pipeline：多个子会话独立落盘、谱系正确；
- * - fatal 错误终止脚本：父轮次 crash、工具结果 isError（不静默成功）。
+ * - fatal 错误终止脚本：工具结果 isError、模型看到失败原因后如实报告（不静默成功）。
  */
 
 let dir: string
@@ -169,7 +169,7 @@ describe('M8 轨迹衔接 e2e', () => {
     }
   })
 
-  it('fatal 错误终止脚本：父轮次 crash、不静默成功（拼错选项必须杀脚本）', async () => {
+  it('fatal 错误终止脚本：工具结果 isError、模型看到失败原因（拼错选项绝不静默成功）', async () => {
     const runtime = await boot([
       {
         toolCalls: [{
@@ -181,17 +181,25 @@ describe('M8 轨迹衔接 e2e', () => {
           },
         }],
       },
+      // 模型看到失败原因后的如实报告
+      { content: '脚本拼错了选项，这个工作流没有跑起来。' },
     ], true)
     try {
       const session = await runtime.ctx.get('session-manager')!.create({ title: '父会话', cwd: workspace })
       const loop = await attachLoop(session)
-      await expect(loop.chat('跑个会拼错的脚本')).rejects.toThrow(/UNSUPPORTED_OPTION/)
+      await loop.chat('跑个会拼错的脚本')
 
-      // 父日志：tool 调用事件已落、结果没落（execute 抛错）、turn/end crash
+      // 父日志：tool 调用 + isError 结果（execute 抛错被 loop 归一化回填，轮次不报废）
       expect(session.log.map((e) => e.type)).toEqual([
-        'session/created', 'turn/start', 'user', 'assistant', 'tool', 'turn/end',
+        'session/created', 'turn/start', 'user', 'assistant', 'tool', 'tool', 'assistant', 'turn/end',
       ])
-      expect(session.log.at(-1)!.payload).toEqual({ reason: 'crash' })
+      const toolResult = session.log[5]!.payload as { name: string; input: unknown; output: { isError: boolean; content: string } }
+      expect(toolResult.name).toBe('workflow')
+      expect(toolResult.output.isError).toBe(true)
+      expect(toolResult.output.content).toContain('UNSUPPORTED_OPTION')
+      // 模型第二次调用看到了失败原因（错误结果回填 messages）——绝不静默成功
+      expect(JSON.stringify(runtime.fake.requests[1]!.messages)).toContain('UNSUPPORTED_OPTION')
+      expect(session.log.at(-1)!.payload).toEqual({ reason: 'done' })
     } finally {
       await runtime.dispose()
     }

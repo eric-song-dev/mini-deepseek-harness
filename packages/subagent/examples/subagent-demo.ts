@@ -7,7 +7,8 @@
  *    子会话 JSONL 独立落盘、projectTurns 可完整回放（轨迹三件套不缺环）；
  * 2. workflow 编排 —— 假 LLM 台词调 workflow 工具跑一段脚本（phase/parallel/
  *    pipeline/agent 四钩子），打印 workflow/* 观察事件序列、脚本返回值与子会话谱系；
- * 3. fatal 与卸载 —— 脚本拼错 agent() 选项 → fatal 终止（父轮次 crash）；
+ * 3. fatal 与卸载 —— 脚本拼错 agent() 选项 → fatal 终止脚本（工具结果 isError、
+ *    模型看到失败原因后如实报告，绝不静默成功）；
  *    卸载 tool-subagent / tool-workflow / spawnProvider → 工具与提供方消失（M6 可逆）。
  *
  * 运行：pnpm demo:subagent（加 --clean 清空 demo 会话目录）
@@ -114,12 +115,11 @@ async function act3(ctx: Context, fibers: { subagentTool: Awaited<ReturnType<Con
   const loop: AgentLoop = loopFiber.ctx['agent-loop']
 
   console.log(`脚本拼错选项（typo 不是合法 agent() 选项）：${SCRIPT_BAD}`)
-  try {
-    await loop.chat('跑一下这段脚本')
-  } catch (error) {
-    console.log(`fatal 错误终止脚本（父轮次 crash、工具结果 isError）：${String(error).slice(0, 140)}`)
-  }
-  console.log(`父轮次结尾：${JSON.stringify(session.log.at(-1)!.payload)}（绝不静默成功）\n`)
+  await loop.chat('跑一下这段脚本')
+  const resultEvent = session.log.filter((e) => e.type === 'tool').at(-1)!
+  const result = (resultEvent.payload as { output: { isError: boolean; content: string } }).output
+  console.log(`工具结果 isError（绝不静默成功）：${result.content.slice(0, 120)}`)
+  console.log(`父轮次结尾：${JSON.stringify(session.log.at(-1)!.payload)}（模型看到失败原因后如实报告）\n`)
 
   console.log('卸载前：')
   console.log(`  tools：${ctx.tools.list().map((t) => t.name).join(', ')}`)
@@ -153,8 +153,9 @@ async function main(): Promise<void> {
     { content: '子回答甲' },
     { content: '子回答乙' },
     { content: '编排完成' },
-    // 第三幕：父要 workflow（坏脚本）——工具抛错，无需后续回复
+    // 第三幕：父要 workflow（坏脚本）→ 工具结果 isError → 模型如实报告失败
     { toolCalls: [{ id: 'w2', name: 'workflow', arguments: { meta: { name: 'bad', description: '坏脚本' }, script: SCRIPT_BAD } }] },
+    { content: '脚本拼错了选项（typo），这个工作流没有跑起来。' },
   ] })
   await ctx.plugin(provideLlm, fake)
   await ctx.plugin(toolRegistry)
