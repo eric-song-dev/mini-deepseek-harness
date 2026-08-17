@@ -43,7 +43,8 @@ export class SessionManager extends Service {
   async resume(id: string): Promise<Session> {
     const loaded = await this.persistence.load(id)
     const { events, repaired } = repairDanglingTurn(loaded)
-    if (repaired) await this.persistence.append(id, repaired)
+    // 修复可能补多条（悬空工具调用的 isError 结果 + turn/end），全部落盘保幂等
+    for (const event of repaired) await this.persistence.append(id, event)
     const meta = await this.persistence.locate(id)
     if (!meta) throw new SessionNotFoundError(id)
     return openSession(this.ctx, { id, meta, persistence: this.persistence, events })
