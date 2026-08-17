@@ -317,3 +317,31 @@
   `examples/hello-profile` demo、两个包的教学 README、教程 `docs/tutorials/M0-kernel-and-plugins.md`。
 - M0 关键技术决策（cordis@4.0.0-rc.8、bundler 解析、模块增强类型化、profile 格式、pnpm allowBuilds）
   已归档：`implemented/architecture/2026-08-16-m0-技术决策.md`。
+
+## M10 完成快照（2026-08-18 增补）
+
+- **状态**：M10 已实现并通过验收（全仓 488 测试全绿（node+jsdom 双 workspace，M10 新增
+  55：web-contract 17 + fake 6 + tool 9 + deepseek 19 + e2e 3 + my-provider 2 +
+  web-demo-m10 1，其余为存量回归）、typecheck 全绿、`demo:websearch --clean` 三幕零 key
+  实测（四行插件即获能力 → 假 LLM 驱动 web_search 真工具往返全程入轨迹、结果 JSON 回填
+  模型 → 卸载 provider 得 `{error}` 工具仍在 → 重装恢复）、教程练习红绿翻转手动实测
+  （删 available() 看红 → 恢复绿）、`loadProfile` 验收"profile 加插件行即获 web_search"）。
+  状态指针已改 backlog #1（CLI）待开始，M10.md 置 implemented。
+- M10 落地物：`@mini-dsh/web-search`（能力 seam `ctx.web`：WebSearchProvider 注册表 +
+  执行时选择六支 + 返回路径强制 maxResults + WebError 码表八码；fakeWebSearch 台词本
+  假提供方；deepseekWebSearch 真提供方（Anthropic 兼容 Messages API + 原生
+  web_search_20250305 工具 + 结构化块解析 + 严格模式 + 假 HTTP 端点测试）；webSearchTool
+  消费方（稳定注册 + `{error}` 语义 + 协作式超时））、demo:websearch + 示例 profile
+  （websearch.profile.yml + default 导出 shim ×4）、**Web 接入（M8 教训）**：web-demo-shared
+  挂 web 三层（fake 模式 fakeWebSearch / real 模式 deepseekWebSearch，client 零改动，
+  回归 web-demo-m10.test.ts）、教程 `docs/tutorials/M10-web-search.md` + 练习
+  （my-provider.test.ts）。
+- spec 定稿十项决策逐条核对落地（含实施修订：signal?.aborted 检查抽成 isAborted() 函数
+  绕 TS 窄化误报、假 fetch 脚本耗尽改抛 TypeError 对齐 `typeof fetch` 类型）。上游调研
+  与决策归档：`implemented/architecture/2026-08-18-m10-web-search-{上游调研,决策}.md`；
+  排期两份 note（2026-08-16-m7-m10-排期、2026-08-18-m10-plan-todo-退回-backlog）随
+  M7–M10 全部执行完毕归档 implemented/architecture/。
+- requirements 同步：头部 v0.8（M10 加入已完成列表、下一工作单元 = backlog #1 CLI）、
+  §6 排期表标注 M7–M10 全部完成、§8 seams 表增 Web 能力行、§9 M10 行标注已完成；
+  教程索引增 M10 行；根 README 增 demo:websearch 与包行、状态段落更新；包 README
+  （教学导向）。

@@ -32,20 +32,16 @@
 
 ## 当前状态指针
 
-- **M0–M9 全部完成，M10（web search）进行中** —— 当前工作单元 =
-  **M10（web search 插件）**：上游调研完成（`proposed/2026-08-18-m10-web-search-上游调研.md`），
-  spec 已定稿置 proposed（`docs/milestones/M10.md`），TDD 实现中
-  （T2 web 能力 seam → T3 fake → T4 工具 → T5 deepseek → T6 e2e+HMR →
-  T7 demo → T8 Web 接入 → T9 教程）。可插拔已实现，M10 用其落地第一个外部 HTTP 工具。
-  排期变更（2026-08-18 用户拍板）：plan / todo 退回 backlog（与 goal 合并回
-  requirements §6 backlog 第 5 项）；web search 由 M11 重编号为 M10 ——
-  见 `proposed/2026-08-18-m10-plan-todo-退回-backlog.md`。
-  其余 backlog（CLI / 审批栈 / Trajectory v2 / SQLite / goal·plan·todo / LSP /
+- **M0–M10 全部完成** —— 下一个工作单元 = **backlog #1：CLI 客户端**
+  （interactive TUI + headless 双模式，用户明确指定）。开工方式同里程碑：先在
+  `docs/milestones/` 建 spec（现无 CLI spec 文件，需从零定稿任务拆解/TDD 顺序/验收/
+  教程主题——CLI 是 backlog 项，无上游必读索引要求，可参考上游 `apps/cli/` 按需调研），
+  再 TDD。其余 backlog（审批栈 / Trajectory v2 / SQLite / goal·plan·todo / LSP /
   compaction / settings-i18n / telemetry / 动态插件热加载（前置已备）/ 压轴教程）
   见 `docs/requirements.md` §6。
-- 排期决策与上游调研摘要：`proposed/2026-08-16-m7-m10-排期.md`（M10 退回后的修订
-  见 `proposed/2026-08-18-m10-plan-todo-退回-backlog.md`）
-- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M9 完成快照）
+- 排期决策（M7–M10 已全部执行完毕，归档）：`implemented/architecture/2026-08-16-m7-m10-排期.md`、
+  `implemented/architecture/2026-08-18-m10-plan-todo-退回-backlog.md`
+- 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M10 完成快照）
 - M0 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m0-技术决策.md`
 - M1 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m1-session-日志决策.md`
 - M2 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m2-llm-与-loop-决策.md`
@@ -59,5 +55,7 @@
   （上游调研：`implemented/architecture/2026-08-16-m8-上游调研.md`）
 - M9 技术决策（已落地归档）：`implemented/architecture/2026-08-16-m9-mcp-决策.md`
   （上游调研：`implemented/architecture/2026-08-16-m9-上游调研.md`）
-- 总纲：`docs/requirements.md`（v0.7：MVP 完成 + M6/M7/M8/M9 完成 + M10 web search 排期）
+- M10 技术决策（已落地归档）：`implemented/architecture/2026-08-18-m10-web-search-决策.md`
+  （上游调研：`implemented/architecture/2026-08-18-m10-web-search-上游调研.md`）
+- 总纲：`docs/requirements.md`（v0.8：MVP + M6–M10 全部完成；下一工作单元 = backlog #1 CLI）
 - 新 session 启动 prompt：`docs/session-prompts/template.md`（固定模板，不要改动）

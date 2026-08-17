@@ -1,7 +1,8 @@
 # M10 原排期（plan/todo）退回 backlog；web search 重编号为 M10
 
 - **日期**：2026-08-18
-- **状态**：`proposed`（用户拍板；文档已同步，后续里程碑执行按此进行）
+- **状态**：`implemented`（重编号已生效，web search 作为 M10 已完成；plan/todo 保留在
+  requirements §6 backlog 第 5 项）
 
 ## 背景
 

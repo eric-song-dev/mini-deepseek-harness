@@ -1,8 +1,8 @@
 # mini-deepseek-harness 需求文档
 
-> 版本：v0.7 · 2026-08-18 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）、
-> M8（subagent/workflow）、M9（MCP 外部工具协议）已完成；M10 已排期
-> （web search，详见 §6/§9）
+> 版本：v0.8 · 2026-08-18 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）、
+> M8（subagent/workflow）、M9（MCP 外部工具协议）、M10（web search）**全部完成**；
+> 下一工作单元 = backlog #1 CLI 客户端（interactive TUI + headless，见 §6）
 > 上游参照：[deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（"Everything is a Plugin"，113k+ stars）
 
 ## 1. 项目定位
@@ -82,14 +82,15 @@
 
 ## 6. Backlog（按优先级）
 
-**M7–M10 排期已定（2026-08-16，用户拍板）**，按以下顺序推进，其余 backlog 项排在其后：
+**M7–M10 排期（2026-08-16，用户拍板；2026-08-18 全部完成）**，其后按优先级推进其余
+backlog 项：
 
 | 里程碑 | 方向 | 与原 backlog 的对应 |
 |---|---|---|
 | **M7** | 原版 AI 技能移植：学习上游 `.agents/skills` / `.claude/skills` / preset skills 的 SKILL.md 格式与发现约定，把合适的一批上游技能 copy/改写成 mini 版（落 `<mini>/.agents/skills/`） | 新排期项（M5 已做 skill 子系统，本 M 补"原版技能内容 + 格式约定"） |
 | **M8** | subagent / workflow（多智能体编排） | 原 backlog #5 |
 | **M9** | MCP（外部工具协议接入） | 原 backlog #6 的 MCP 部分；**LSP 继续留在 backlog** |
-| **M10** | web search 插件（上游 `ctx.web` 三层架构 mini 版：能力 seam + provider 插件组 + `web_search` 工具） | 用户新增项（可插拔机制已实现，本 M 用其落地第一个外部 HTTP 工具插件） |
+| **M10** | web search 插件（上游 `ctx.web` 三层架构 mini 版：能力 seam + provider 插件组 + `web_search` 工具） | 用户新增项（可插拔机制已实现，本 M 用其落地第一个外部 HTTP 工具插件）——**已完成（2026-08-18）** |
 
 **M7–M10 开工协议（每个 M 都一样）**：新 session 先读 `docs/references/upstream.md`
 里该 M 的**上游源码索引（文档 + 代码）**——照搬概念不照搬代码、一次只读一个文件
@@ -143,6 +144,7 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | `Subagents`（M8） | 具名 provider 注册表 + 一次前台 start | 进程外协议、可继续后台子 agent、能力矩阵 |
 | `WorkflowEngine`（M8） | 脚本编排引擎（`ctx.workflowEngine`） | worker-thread 隔离引擎 |
 | MCP 桥（M9） | 插件（`inject: ['tools']`）：连接外部 stdio MCP server，工具以 `mcp__<server>__<tool>` 注册进 Tools | streamable-http、自动重连、resources/prompts |
+| Web 能力（M10） | 抽象服务 `ctx.web`：`registerSearchProvider` + 执行时选择六支 + maxResults 强制；提供方插件注册能力，`web_search` 工具稳定注册进 Tools | `web_fetch`、更多提供方（perplexity/exa）、credentials seam |
 | Client `Slot` | UI 注册点 | 原版任意 ui-* 插件 |
 | 事件 | `session/*`、`agent/*`、`subagent/*`、`workflow/*` | telemetry、compaction、subagent |
 
@@ -164,7 +166,7 @@ docs/                      # 需求、架构文档、tutorials/ 里程碑教程
 | **M7** | 原版 AI 技能移植：学习上游 `.agents/.claude` 技能体系（SKILL.md 格式 + 发现约定），把合适的一批上游技能 copy/改写成 mini 版 | `skill` 工具可列出并加载全部移植技能；移植技能在本仓库真实可用（零 key 验收）——**已完成（2026-08-16）** |
 | **M8** | subagent / workflow：多智能体编排最小集（in-process subagent 服务 + tool-subagent；workflow 最小 pipeline） | 父 agent 派生子代理完成子任务并回收结果，全链路入轨迹、注册可逆——**已完成（2026-08-16）** |
 | **M9** | MCP：mcp-client seam + stdio transport + 外部 MCP server 的工具注册进 Tools 注册表 | 连上一个真 MCP server 后其工具可被模型调用；断开即撤销——**已完成（2026-08-16）** |
-| **M10** | web search：`ctx.web` 能力 seam（provider 注册表 + 执行时选择）+ `deepseekWebSearch`/`fakeWebSearch` 提供方 + `web_search` 工具（可插拔示范：第一个外部 HTTP 工具插件） | profile 加插件行即获 web_search；fake 提供方零 key 全链路可回放；真提供方假 HTTP 端点测试；卸载即撤销 |
+| **M10** | web search：`ctx.web` 能力 seam（provider 注册表 + 执行时选择）+ `deepseekWebSearch`/`fakeWebSearch` 提供方 + `web_search` 工具（可插拔示范：第一个外部 HTTP 工具插件） | profile 加插件行即获 web_search；fake 提供方零 key 全链路可回放；真提供方假 HTTP 端点测试；卸载即撤销——**已完成（2026-08-18）** |
 
 每个里程碑：**有测试 + 可 demo + 有文档 + 有教程**（教程要求见 §5.1，随 M 同步交付）。
 

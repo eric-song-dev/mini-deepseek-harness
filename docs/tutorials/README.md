@@ -15,6 +15,7 @@
 | M7 | [M7-upstream-skills.md](M7-upstream-skills.md) | 原版技能体系：SKILL.md 格式契约、frontmatter 解析、fail-closed、mini 化改写 |
 | M8 | [M8-subagent-workflow.md](M8-subagent-workflow.md) | 多智能体：子代理怎么派生（spawn/fork）、结果怎么回收、workflow 脚本钩子怎么编排 |
 | M9 | [M9-mcp.md](M9-mcp.md) | 外部工具协议：MCP server 的工具怎么变成本地 Tools 注册表的一员、两阶段同步、断开即撤销 |
+| M10 | [M10-web-search.md](M10-web-search.md) | 能力 seam 三层拆分：provider 注册表与执行时选择、稳定注册、web_search 工具 |
 
 每篇的验收标准（requirements §5.1"小白验收"）：**零 API key 可跟做**——练习全部由假 LLM / 测试
 脚手架驱动；教程中的命令与代码块复制即跑。

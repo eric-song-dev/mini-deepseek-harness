@@ -18,6 +18,7 @@ pnpm demo:trajectory --clean  # M5 demo：轨迹回放 + skill 自举两幕（�
 pnpm demo:skills --clean      # M7 demo：技能目录 + 按 description 路由 + 调用策略（零 API key）
 pnpm demo:subagent --clean  # M8 demo：subagent 委派回收 + workflow 编排 + fatal/卸载（零 API key）
 pnpm demo:mcp --clean  # M9 demo：外部 MCP server 工具发现 + 真调用入轨迹 + 断开即撤销/重装（零 API key）
+pnpm demo:websearch --clean  # M10 demo：web search 三层（seam+provider+工具）+ 模型调用入轨迹 + 卸载{error}/重装（零 API key）
 pnpm demo:web --clean  # 浏览器对话用真模型（读 .env 的 key；系统提示自动注入当前时间）
 pnpm demo:web:fake --clean  # 零 key Web 演示：假 LLM 台词本（第一轮 subagent 委派 + 第二轮外部 MCP 工具）
 # 真 API 冒烟（唯一需要 key 的命令；key 放 .env 或环境变量 DEEPSEEK_API_KEY，其余全部零 key）：
@@ -40,6 +41,7 @@ pnpm demo:real --ask "用一句话介绍你自己"
 | `packages/subagent` | Subagents seam（具名 provider 注册表）+ spawn/fork 提供方 + subagent 委派工具（M8） |
 | `packages/workflow` | WorkflowEngine seam（同线程脚本编排）+ workflow 工具（模型写扇出脚本，M8） |
 | `packages/mcp` | MCP 客户端桥（stdio）：外部 MCP server 的工具以 mcp__<server>__<tool> 注册进 Tools（M9） |
+| `packages/web-search` | web 能力 seam（ctx.web 提供方注册表 + 执行时选择）+ fake/deepseek 双提供方 + web_search 工具（M10） |
 | `packages/bundle-web` | web profile 组合：client-shell + UI 插件排成浏览器应用 |
 | `apps/web` | Web 客户端壳（Vite entry，只注入 bundle-web，不是独立应用） |
 
@@ -57,23 +59,18 @@ pnpm demo:real --ask "用一句话介绍你自己"
 
 ## 状态
 
-MVP（M0–M5）**全部完成**，M6（一切注册皆可逆）、M7（原版 AI 技能移植）、M8
-（subagent / workflow 多智能体编排）、M9（MCP 外部工具协议）**已完成**：
-M0（脚手架 + test-support + cordis 最小启动）、M1（Session 事件词汇 + JSONL 持久化 +
-resume + 崩溃恢复）、M2（LLM seam + 假 LLM + agent loop）、M3（Tools seam + bash/fs
-工具 + 工具调用循环）、M4（Web：RPC 桥 + 会话列表 + composer + 流式 + tool 卡片）、
-M5（Trajectory 简化视图 + skills 子系统，含 skill 自举）、M6（自有 seam 注册全部可
-撤销：注册即 effect + HMR-safety 测试组）、M7（上游技能体系移植：SKILL.md frontmatter
-契约 + fail-closed 校验 + code-review/prose-standard/trim-cot-leakage/pre-push-checks/
-doc-standards/archive-agent-notes 六个技能，`demo:skills` 零 key 验收）、M8（subagents
-seam + spawn/fork 进程内提供方 + `subagent` 工具 + WorkflowEngine 脚本编排 + `workflow`
-工具，loop 零专属改动，`demo:subagent` 零 key 验收，`demo:web:fake` 第一轮为浏览器
-可见的委派场景）、M9（mcp-client 桥：stdio transport + 官方 SDK + 两阶段同步 +
-断开即撤销 + 可逆 dispose，外部 MCP server 的工具注册进 Tools 注册表；fixture +
-官方 server-filesystem 双 e2e，`demo:mcp` 三幕零 key 验收，`demo:web:fake` 第二轮
-为浏览器可见的 MCP 工具卡片）。
-**M10 已排期（2026-08-16）**：M10 = web search 插件（可插拔机制已实现，用其落地第一个
-外部 HTTP 工具）。每个 M 开工先按 `docs/references/upstream.md` 的上游源码索引读上游
-文档与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M10 已建 draft 占位）。其余
-backlog（CLI / 审批栈 / Trajectory v2 / goal·plan·todo / 压轴教程等）见
-`docs/requirements.md` §6 与 notes 状态指针。
+MVP（M0–M5）与 M6–M10 **全部完成**：M0（脚手架 + test-support + cordis 最小启动）、
+M1（Session 事件词汇 + JSONL 持久化 + resume + 崩溃恢复）、M2（LLM seam + 假 LLM +
+agent loop）、M3（Tools seam + bash/fs 工具 + 工具调用循环）、M4（Web：RPC 桥 + 会话
+列表 + composer + 流式 + tool 卡片）、M5（Trajectory 简化视图 + skills 子系统，含
+skill 自举）、M6（自有 seam 注册全部可撤销：注册即 effect + HMR-safety 测试组）、M7
+（上游技能体系移植：SKILL.md frontmatter 契约 + fail-closed 校验 + 六个技能移植）、
+M8（subagents seam + spawn/fork 提供方 + WorkflowEngine 脚本编排 + 委派/编排工具，
+loop 零专属改动）、M9（mcp-client 桥：stdio transport + 两阶段同步 + 断开即撤销，
+外部 MCP server 工具注册进 Tools）、M10（web search 三层：ctx.web 能力 seam + 执行时
+选择六支 + fake/deepseek 双提供方 + web_search 工具稳定注册，第一个外部 HTTP 工具，
+`demo:websearch` 三幕零 key 验收，`demo:web:fake` 第三轮为浏览器可见的 web_search 场景）。
+下一工作单元 = backlog #1 **CLI 客户端**（interactive TUI + headless 双模式）；其余
+backlog（审批栈 / Trajectory v2 / SQLite / goal·plan·todo / LSP / compaction /
+settings-i18n / telemetry / 动态插件热加载 / 压轴教程）见 `docs/requirements.md` §6
+与 notes 状态指针。
