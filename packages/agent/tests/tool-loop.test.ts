@@ -4,7 +4,7 @@ import type { FakeLlm } from '@mini-dsh/test-support'
 import { openSession } from '@mini-dsh/session'
 import type { SessionConfig, SessionEvent } from '@mini-dsh/session'
 import { provideLlm } from '@mini-dsh/llm'
-import { createToolRegistry, provideTools, UnknownToolError } from '@mini-dsh/tools'
+import { createToolRegistry, provideTools } from '@mini-dsh/tools'
 import type { ToolContext, ToolsService } from '@mini-dsh/tools'
 import { agentLoop, MaxStepsExceededError } from '@mini-dsh/agent'
 import type { AgentLoop, AgentLoopConfig } from '@mini-dsh/agent'
@@ -166,15 +166,61 @@ describe('agentLoop 工具调用循环（M3）', () => {
     }
   })
 
-  it('模型调用未知工具：turn/end(reason:crash)、原错误（UnknownToolError）上抛', async () => {
+  it('模型调用未知工具：错误以 isError 结果回填模型，模型可纠正而不是整轮 crash', async () => {
     const { session, loop, dispose } = await makeHarness({
-      replies: [toolCall('nope', 'c1', {})],
+      replies: [toolCall('nope', 'c1', {}), { content: '没有那个工具，我直接回答。' }],
     })
     try {
-      await expect(loop.chat('调个不存在的工具')).rejects.toBeInstanceOf(UnknownToolError)
-      expect(session.log.at(-1)!.type).toBe('turn/end')
-      expect(session.log.at(-1)!.payload).toEqual({ reason: 'crash' })
-      expect(session.log.filter((e) => e.type === 'tool')).toHaveLength(1) // 只有调用事件，结果没落
+      await loop.chat('调个不存在的工具')
+
+      const toolEvents = session.log.filter((e) => e.type === 'tool')
+      expect(toolEvents).toHaveLength(2) // 调用事件 + 错误结果事件
+      expect(toolEvents[1]!.payload).toMatchObject({
+        name: 'nope',
+        input: {},
+        output: { isError: true },
+      })
+      const output = (toolEvents[1]!.payload as { output: { content: string } }).output
+      expect(output.content).toContain('未知工具')
+      // 轮次正常收尾：模型看到失败原因后自行纠正，而不是整轮报废
+      expect(session.log.at(-1)!.payload).toEqual({ reason: 'done' })
+    } finally {
+      await dispose()
+    }
+  })
+
+  it('工具执行抛错：错误以 isError 结果回填模型，轮次继续（模型可自行纠正）', async () => {
+    const { ctx, session, fake, loop, dispose } = await makeHarness({
+      replies: [toolCall('boom', 'c1', { path: 'x' }), { content: '工具坏了，我直接回答。' }],
+    })
+    try {
+      ctx.get('tools')!.register({
+        declaration: {
+          name: 'boom',
+          description: '总是抛错',
+          parameters: { type: 'object', properties: { path: { type: 'string' } } },
+        },
+        execute: async () => {
+          throw new Error('boom 内部故障')
+        },
+      })
+
+      await loop.chat('调用会失败的工具')
+
+      const toolEvents = session.log.filter((e) => e.type === 'tool')
+      expect(toolEvents).toHaveLength(2)
+      expect(toolEvents[1]!.payload).toEqual({
+        name: 'boom',
+        input: { path: 'x' },
+        output: { isError: true, content: 'Error: boom 内部故障' },
+      })
+      expect(session.log.at(-1)!.payload).toEqual({ reason: 'done' })
+      // 模型第二次调用看到的 messages：错误结果已回填（JSON 化的 isError 对象）
+      expect(fake.requests[1]!.messages).toEqual([
+        { role: 'user', content: '调用会失败的工具' },
+        { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'boom', arguments: { path: 'x' } }] },
+        { role: 'tool', toolCallId: 'c1', content: '{"isError":true,"content":"Error: boom 内部故障"}' },
+      ])
     } finally {
       await dispose()
     }
