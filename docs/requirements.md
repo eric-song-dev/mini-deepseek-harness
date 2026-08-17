@@ -1,8 +1,9 @@
 # mini-deepseek-harness 需求文档
 
-> 版本：v0.8 · 2026-08-18 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）、
+> 版本：v0.9 · 2026-08-18 · 状态：MVP（M0–M5）与 M6（注册可逆）、M7（原版技能移植）、
 > M8（subagent/workflow）、M9（MCP 外部工具协议）、M10（web search）**全部完成**；
-> 下一工作单元 = backlog #1 CLI 客户端（interactive TUI + headless，见 §6）
+> 下一工作单元 = backlog #1 CLI 客户端（interactive TUI + headless，见 §6）；
+> backlog 新增第 3 项：工具并行调度（2026-08-18 用户实测真搜索时登记）
 > 上游参照：[deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（"Everything is a Plugin"，113k+ stars）
 
 ## 1. 项目定位
@@ -100,16 +101,25 @@ backlog 项：
 
 1. **CLI 客户端**（用户明确指定）：interactive TUI + headless 双模式
 2. 审批/权限栈（bash approval；MVP 已留 hook）
-3. Trajectory v2：虚拟滚动 + 时间线概览（贴近原版 [ui-trajectory](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-trajectory/README.zh.md)）
-4. SQLite 持久化后端（演示 seam 换后端）
-5. goal / plan / todo（原版任务系统，完整三件套）
-6. LSP（M9 只交付 MCP）
-7. compaction（上下文压缩）
-8. settings UI / 主题 token / i18n
-9. telemetry、session 搜索查询
-10. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后；
+3. **工具并行调度**：一个 assistant 回复里的多个 tool call 并行执行（M3 留的
+   "单步单个工具串行，并行是 backlog"；与审批栈同属 tools 管线/loop 层面改造，排位可调）。
+   上游参照（已核实）：`packages/core/agent-loop/src/tool-calls.ts` `executeToolCalls`——
+   按 `isConcurrencySafe` 分 parallel/exclusive（exclusive 成屏障）、有界滚动池
+   （`maxParallelToolCalls` 默认 10）、结果**按模型顺序 commit**、abort 时给未启动调用
+   合成错误结果；工具侧声明 `isConcurrencySafe`（上游 tool-web 的 web_search/fetch 均
+   声明并发安全）。实测动机（2026-08-18）：demo:web 真搜索一轮发 2 个 web_search，
+   mini 串行 = 两次完整 Messages 轮次时间相加（用户会话日志
+   `.mini-dsh/web-real-sessions/` 可见 #12/#14 前后相接）。
+4. Trajectory v2：虚拟滚动 + 时间线概览（贴近原版 [ui-trajectory](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-trajectory/README.zh.md)）
+5. SQLite 持久化后端（演示 seam 换后端）
+6. goal / plan / todo（原版任务系统，完整三件套）
+7. LSP（M9 只交付 MCP）
+8. compaction（上下文压缩）
+9. settings UI / 主题 token / i18n
+10. telemetry、session 搜索查询
+11. 动态插件热加载（Web 里 define/run cordis 插件，原版亮点，放最后；
     **前置已备（M6 注册可逆）**：自有 seam 的注册全部可撤销 + HMR-safety 测试）
-11. **压轴教程**："给 mini 版写你的第一个插件" 综合实战篇 —— 每里程碑的入门教程属 P0 同步交付（§5.1），此项是收官的独立成章练习
+12. **压轴教程**："给 mini 版写你的第一个插件" 综合实战篇 —— 每里程碑的入门教程属 P0 同步交付（§5.1），此项是收官的独立成章练习
 
 ## 7. 包布局
 

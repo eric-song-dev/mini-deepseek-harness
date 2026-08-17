@@ -71,6 +71,6 @@ loop 零专属改动）、M9（mcp-client 桥：stdio transport + 两阶段同�
 选择六支 + fake/deepseek 双提供方 + web_search 工具稳定注册，第一个外部 HTTP 工具，
 `demo:websearch` 三幕零 key 验收，`demo:web:fake` 第三轮为浏览器可见的 web_search 场景）。
 下一工作单元 = backlog #1 **CLI 客户端**（interactive TUI + headless 双模式）；其余
-backlog（审批栈 / Trajectory v2 / SQLite / goal·plan·todo / LSP / compaction /
-settings-i18n / telemetry / 动态插件热加载 / 压轴教程）见 `docs/requirements.md` §6
-与 notes 状态指针。
+backlog（审批栈 / 工具并行调度 / Trajectory v2 / SQLite / goal·plan·todo / LSP /
+compaction / settings-i18n / telemetry / 动态插件热加载 / 压轴教程）见
+`docs/requirements.md` §6 与 notes 状态指针。

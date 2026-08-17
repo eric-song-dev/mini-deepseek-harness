@@ -2,7 +2,7 @@
 
 - **日期**：2026-08-18
 - **状态**：`implemented`（重编号已生效，web search 作为 M10 已完成；plan/todo 保留在
-  requirements §6 backlog 第 5 项）
+  requirements §6 backlog（2026-08-18 插入"工具并行调度"后现列第 6 项））
 
 ## 背景
 

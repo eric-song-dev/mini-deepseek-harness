@@ -49,7 +49,8 @@ export class MaxStepsExceededError extends Error {
  *
  * 工具往返的输入同样来自日志投影（"输入读日志"延续到循环内部）：每步重新投影，
  * 上一步的工具结果以 role:'tool' 消息进入下一步的模型输入（M3 spec 决策 8：
- * 结果回填 messages，而不是"记住在别处"）。单步单个工具串行执行，多工具并行是 backlog。
+ * 结果回填 messages，而不是"记住在别处"）。单步单个工具串行执行，多工具并行是 backlog
+ * （requirements §6 第 3 项，含上游 executeToolCalls 的调研摘要）。
  */
 export interface AgentLoop {
   /**
@@ -121,7 +122,8 @@ export const agentLoop = Object.assign(
           }
           ctx.emit('assistant', assistantPayload)
           if (result.toolCalls === undefined || result.toolCalls.length === 0) break
-          // 单步单个工具串行：一个 assistant 回复里的多个调用逐个执行（并行是 backlog）。
+          // 单步单个工具串行：一个 assistant 回复里的多个调用逐个执行（并行是 backlog，
+          // requirements §6 第 3 项）。
           for (const call of result.toolCalls) {
             if (steps >= maxSteps) throw new MaxStepsExceededError(maxSteps)
             steps++

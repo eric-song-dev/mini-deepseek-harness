@@ -36,9 +36,9 @@
   （interactive TUI + headless 双模式，用户明确指定）。开工方式同里程碑：先在
   `docs/milestones/` 建 spec（现无 CLI spec 文件，需从零定稿任务拆解/TDD 顺序/验收/
   教程主题——CLI 是 backlog 项，无上游必读索引要求，可参考上游 `apps/cli/` 按需调研），
-  再 TDD。其余 backlog（审批栈 / Trajectory v2 / SQLite / goal·plan·todo / LSP /
-  compaction / settings-i18n / telemetry / 动态插件热加载（前置已备）/ 压轴教程）
-  见 `docs/requirements.md` §6。
+  再 TDD。其余 backlog（审批栈 / 工具并行调度（上游调研已写入 §6 第 3 项）/
+  Trajectory v2 / SQLite / goal·plan·todo / LSP / compaction / settings-i18n /
+  telemetry / 动态插件热加载（前置已备）/ 压轴教程）见 `docs/requirements.md` §6。
 - 排期决策（M7–M10 已全部执行完毕，归档）：`implemented/architecture/2026-08-16-m7-m10-排期.md`、
   `implemented/architecture/2026-08-18-m10-plan-todo-退回-backlog.md`
 - 最近进度快照：`proposed/2026-08-16-mini-deepseek-harness-v0.1.md`（含 M10 完成快照）
