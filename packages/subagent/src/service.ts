@@ -93,9 +93,25 @@ export class SubagentRuntime extends Service implements SubagentsService {
     }
     // 兑现 = 已发布。拒绝路径在 provider.start 内自行清理，这里不 emit 任何事件。
     const run = await provider.start(request)
-    // 生命周期事件对：emit 在父会话 ctx（隔离总线 → 不落父日志、按父级作用域过滤）。
     const info: SubagentRunInfo = { runId: run.id, provider: name, id: run.id, local: true }
-    request.parent.emit('subagent/start', info)
+    // 生命周期事件对：emit 在父会话 ctx（隔离总线 → 不落父日志、按父级作用域过滤）。
+    // 监听器异常隔离（workflow 引擎同款纪律）：坏监听器抛错不能打断 start 兑现、
+    // 不能饿死事件对——子 agent 已发布，调用方必须拿到 run 句柄才能回收。
+    const emitStart = (payload: SubagentRunInfo): void => {
+      try {
+        request.parent.emit('subagent/start', payload)
+      } catch (error) {
+        this.ctx.logger.warn('subagent: subagent/start 监听器抛错：%s', renderThrown(error))
+      }
+    }
+    const emitEnd = (payload: SubagentRunEndInfo): void => {
+      try {
+        request.parent.emit('subagent/end', payload)
+      } catch (error) {
+        this.ctx.logger.warn('subagent: subagent/end 监听器抛错：%s', renderThrown(error))
+      }
+    }
+    // 先挂配对观察、再 emit start：result 无论何时结算，end 必成对（不留下孤儿 start）。
     const observed = run.result.then(
       (result) => {
         const end: SubagentRunEndInfo = {
@@ -103,16 +119,26 @@ export class SubagentRuntime extends Service implements SubagentsService {
           stopReason: result.stopReason,
           ...(result.output === '' ? {} : { lastAssistantMessage: result.output }),
         }
-        request.parent.emit('subagent/end', end)
+        emitEnd(end)
         return result
       },
       (error: unknown) => {
         // 基础设施故障（result 意外 reject）：事件对仍闭合，不留下孤儿 start。
-        request.parent.emit('subagent/end', { ...info, stopReason: 'error' })
+        emitEnd({ ...info, stopReason: 'error' })
         throw error
       },
     )
+    emitStart(info)
     return { ...run, result: observed }
+  }
+}
+
+/** 渲染任意抛出的值（连 String 强制都可能抛）。 */
+function renderThrown(error: unknown): string {
+  try {
+    return String(error)
+  } catch {
+    return '[unrenderable thrown value]'
   }
 }
 
