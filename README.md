@@ -72,9 +72,8 @@ seam + spawn/fork 进程内提供方 + `subagent` 工具 + WorkflowEngine 脚本
 断开即撤销 + 可逆 dispose，外部 MCP server 的工具注册进 Tools 注册表；fixture +
 官方 server-filesystem 双 e2e，`demo:mcp` 三幕零 key 验收，`demo:web:fake` 第二轮
 为浏览器可见的 MCP 工具卡片）。
-**M10–M11 已排期（2026-08-16）**：M10 plan/todo
-（**goal 先不做**）→ M11 web search 插件（可插拔机制已实现，M11 用其落地第一个外部
-HTTP 工具）。每个 M 开工先按 `docs/references/upstream.md` 的上游源码索引读上游文档
-与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M10/M11 已建 draft 占位）。其余
-backlog（CLI / 审批栈 / Trajectory v2 / 压轴教程等）见 `docs/requirements.md` §6 与
-notes 状态指针。
+**M10 已排期（2026-08-16）**：M10 = web search 插件（可插拔机制已实现，用其落地第一个
+外部 HTTP 工具）。每个 M 开工先按 `docs/references/upstream.md` 的上游源码索引读上游
+文档与代码，再定稿 `docs/milestones/M<n>.md` 的 spec（M10 已建 draft 占位）。其余
+backlog（CLI / 审批栈 / Trajectory v2 / goal·plan·todo / 压轴教程等）见
+`docs/requirements.md` §6 与 notes 状态指针。

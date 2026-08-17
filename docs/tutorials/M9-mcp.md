@@ -36,7 +36,7 @@ M9 的新东西只有"桥"这一层。
 ```
 
 如果 M9 做成了，"加一个新能力"从"写一个插件包"变成"profile 里加一行配置"——这就是
-M11（web search 可插拔示范）要继续演示的形态。
+M10（web search 可插拔示范）要继续演示的形态。
 
 ## 2. design：M9 做了什么
 
@@ -296,6 +296,6 @@ pnpm vitest run packages/mcp/tests/my-dice.test.ts
 
 ## 8. 下一步
 
-M10（plan/todo）与 M11（web search）都会沿用这一章的模式：能力 seam + 工具 +
-事件。M11 尤其直接：web search 是 mini 的第一个**外部 HTTP** 工具插件，把
+M10（web search）会沿用这一章的模式：能力 seam + 工具 + 事件。M10 尤其直接：
+web search 是 mini 的第一个**外部 HTTP** 工具插件，把
 "profile 加一行即获能力"推到台前。
