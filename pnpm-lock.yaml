@@ -315,6 +315,9 @@ importers:
       '@mini-dsh/agent':
         specifier: workspace:*
         version: link:../agent
+      '@mini-dsh/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@mini-dsh/llm':
         specifier: workspace:*
         version: link:../llm
