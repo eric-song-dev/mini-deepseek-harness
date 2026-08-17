@@ -253,4 +253,32 @@ describe('Subagents seam 契约', () => {
       await dispose()
     }
   })
+
+  it('subagent/start 监听器抛错被隔离：start 仍兑现、事件对仍闭合、run 正常回收', async () => {
+    const { ctx, dispose } = await boot()
+    try {
+      const deferred = deferredProvider('spawn')
+      ctx.subagents.registerProvider(deferred.provider)
+      const manager = ctx.get('session-manager')!
+      const session = await manager.create({ title: '父会话' })
+      const seenEnds: unknown[][] = []
+      // 坏监听器：抛错不能打断 start 兑现，也不能饿死生命周期事件对
+      session.ctx.on('subagent/start', () => {
+        throw new Error('坏监听器')
+      })
+      session.ctx.on('subagent/end', (...args: unknown[]) => {
+        seenEnds.push(args)
+      })
+
+      const run = await ctx.subagents.start('spawn', { prompt: '请回答', parent: session.ctx })
+      deferred.resolve({ output: '回答', stopReason: 'completed' })
+      const result = await run.result
+      expect(result).toEqual({ output: '回答', stopReason: 'completed' })
+      // end 事件仍然成对发出（先挂配对观察再 emit start 的保证）
+      expect(seenEnds).toHaveLength(1)
+      expect(seenEnds[0]![0]).toMatchObject({ runId: 'child-spawn-1', stopReason: 'completed' })
+    } finally {
+      await dispose()
+    }
+  })
 })
