@@ -167,7 +167,7 @@ describe('OpenAI 兼容 adapter 通过 LLM seam 契约', () => {
 
 describe('createOpenAiLlm（工具调用协议，M3）', () => {
   const tools = [
-    { name: 'read_file', description: '读文件', parameters: { type: 'object', properties: { path: { type: 'string' } } } },
+    { name: 'read', description: '读文件', parameters: { type: 'object', properties: { file_path: { type: 'string' } } } },
   ]
 
   function lastBody(http: FakeHttp): Record<string, unknown> {
@@ -179,7 +179,7 @@ describe('createOpenAiLlm（工具调用协议，M3）', () => {
     const llm = createOpenAiLlm({ fetch: http.fetch })
     await llm.chat([{ role: 'user', content: 'x' }], { tools })
     expect(lastBody(http).tools).toEqual([
-      { type: 'function', function: { name: 'read_file', description: '读文件', parameters: { type: 'object', properties: { path: { type: 'string' } } } } },
+      { type: 'function', function: { name: 'read', description: '读文件', parameters: { type: 'object', properties: { file_path: { type: 'string' } } } } },
     ])
     await llm.chat([{ role: 'user', content: 'x' }])
     expect('tools' in lastBody(http)).toBe(false)
@@ -190,7 +190,7 @@ describe('createOpenAiLlm（工具调用协议，M3）', () => {
     const llm = createOpenAiLlm({ fetch: http.fetch })
     const messages: ChatMessage[] = [
       { role: 'user', content: '读文件' },
-      { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+      { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
       { role: 'tool', toolCallId: 'c1', content: JSON.stringify({ content: '文件内容' }) },
     ]
     await llm.chat(messages)
@@ -198,7 +198,7 @@ describe('createOpenAiLlm（工具调用协议，M3）', () => {
       {
         role: 'assistant',
         content: '',
-        tool_calls: [{ id: 'c1', type: 'function', function: { name: 'read_file', arguments: '{"path":"a.txt"}' } }],
+        tool_calls: [{ id: 'c1', type: 'function', function: { name: 'read', arguments: '{"file_path":"a.txt"}' } }],
       },
       { role: 'tool', tool_call_id: 'c1', content: '{"content":"文件内容"}' },
     ])
@@ -295,7 +295,7 @@ describe('createOpenAiLlm（流式，M4）', () => {
   it('流式 tool_calls 增量按 index 累积（id/name/arguments 跨帧拼接），arguments 解析成对象', async () => {
     const http = createFakeSseHttp(() => ({
       frames: [
-        sseChunk({ tool_calls: [{ index: 0, id: 'c1', function: { name: 'read_file', arguments: '{"path":' } }] }),
+        sseChunk({ tool_calls: [{ index: 0, id: 'c1', function: { name: 'read', arguments: '{"file_path":' } }] }),
         sseChunk({ tool_calls: [{ index: 0, function: { arguments: '"a.txt"}' } }] }),
         sseChunk({}),
       ],
@@ -303,7 +303,7 @@ describe('createOpenAiLlm（流式，M4）', () => {
     const llm = createOpenAiLlm({ fetch: http.fetch })
     const result = await llm.chat([{ role: 'user', content: 'x' }], { onChunk: () => {} })
     expect(result.content).toBe('')
-    expect(result.toolCalls).toEqual([{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }])
+    expect(result.toolCalls).toEqual([{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }])
     expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0 })
   })
 

@@ -50,11 +50,11 @@ async function boot() {
   const ctx = new Context()
   await ctx.plugin(jsonlPersistence, { dir })
   await ctx.plugin(SessionManager)
-  // 台词本：要 read_file → 要 edit_file → 最终总结（三次 llm.chat，两次工具往返）
+  // 台词本：要 read → 要 edit → 最终总结（三次 llm.chat，两次工具往返）
   const fake = createFakeLlm({
     replies: [
-      { toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'notes.txt' } }] },
-      { toolCalls: [{ id: 'c2', name: 'edit_file', arguments: { path: 'notes.txt', oldText: '未完成', newText: '已完成' } }] },
+      { toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'notes.txt' } }] },
+      { toolCalls: [{ id: 'c2', name: 'edit', arguments: { file_path: 'notes.txt', old_string: '未完成', new_string: '已完成' } }] },
       { content: '好，我把 notes.txt 里的「未完成」改成了「已完成」。' },
     ],
   })
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
 
   console.log('===== 开始前：工作目录里的 notes.txt =====')
   console.log(`${await readFile(NOTES_PATH, 'utf8')}`)
-  console.log('（工具声明给了模型：read_file / write_file / edit_file / bash）\n')
+  console.log('（工具声明给了模型：read / write / edit / bash）\n')
 
   console.log('===== 一轮工具循环：读 → 改 → 总结 =====')
   await loop.chat('帮我把 notes.txt 的状态改成已完成')

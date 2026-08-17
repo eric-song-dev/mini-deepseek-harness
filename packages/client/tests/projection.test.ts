@@ -85,9 +85,9 @@ describe('projectToolCards（M4：tool 调用/结果对投影成卡片）', () =
   })
 
   it('调用后尚无结果：pending=true、无 output', () => {
-    const events = [ev(3, 'tool', { name: 'read_file', input: { path: 'a.txt' } })]
+    const events = [ev(3, 'tool', { name: 'read', input: { file_path: 'a.txt' } })]
     expect(projectToolCards(events)).toEqual([
-      { name: 'read_file', input: { path: 'a.txt' }, output: undefined, pending: true },
+      { name: 'read', input: { file_path: 'a.txt' }, output: undefined, pending: true },
     ])
   })
 

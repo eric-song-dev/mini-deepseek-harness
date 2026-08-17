@@ -50,12 +50,15 @@ pre-execute hooks → execute（工具实现） → post-execute hooks
 
 ## 工具集（MVP 四个）
 
+名字与参数对齐上游工具目录（2026-08-18）：`read`/`write`/`edit` + `file_path` /
+`old_string`/`new_string`；bash 的 `workdir`——模型按上游习惯调用即可命中。
+
 | 工具 | 输入 | 输出 | 要点 |
 |---|---|---|---|
-| `bash` | `{command, cwd?}` | `{stdout, stderr, exitCode}` | **exit code 是输出不是异常**：非零退出也算"成功的结果"，模型需要看到失败原因；只有 spawn 本身失败（cwd 不存在等）才 rejection |
-| `read_file` | `{path}` | 文件内容（string） | 相对路径按会话 cwd 解析；不存在**报错**（读不到就是读不到） |
-| `write_file` | `{path, content}` | `{path, bytes}` | 覆盖写入；父目录自动创建（工具要能"建新东西"） |
-| `edit_file` | `{path, oldText, newText}` | `{path, replaced}` | **精确替换**：旧文本必须恰好出现一次，找不到/出现多次都报错且文件不动 |
+| `bash` | `{command, workdir?}` | `{stdout, stderr, exitCode}` | **exit code 是输出不是异常**：非零退出也算"成功的结果"，模型需要看到失败原因；只有 spawn 本身失败（workdir 不存在等）才 rejection |
+| `read` | `{file_path}` | 文件内容（string） | 相对路径按会话 cwd 解析；不存在**报错**（读不到就是读不到） |
+| `write` | `{file_path, content}` | `{path, bytes}` | 覆盖写入；父目录自动创建（工具要能"建新东西"） |
+| `edit` | `{file_path, old_string, new_string}` | `{path, replaced}` | **精确替换**：旧文本必须恰好出现一次（字面替换，`$` 序列不解释），找不到/出现多次都报错且文件不动 |
 
 cwd 来源：会话 meta（M3 起 `SessionManager.create({ cwd })` 记入 JSONL 头记录），loop 经
 `session-meta` 取到后放进执行上下文 `ToolContext.cwd`。M8 起 `ToolContext` 还带可选

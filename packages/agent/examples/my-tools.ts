@@ -3,7 +3,7 @@
  *
  * 练习任务：
  *   1) 先原样跑一遍：pnpm tsx packages/agent/examples/my-tools.ts
- *   2) 把 SCRIPT 里 edit_file 的 newText 改成别的字，再跑——看磁盘文件与日志怎么变；
+ *   2) 把 SCRIPT 里 edit 的 new_string 改成别的字，再跑——看磁盘文件与日志怎么变；
  *   3) 照着 CUSTOM_TOOL 注册一个自己的工具（比如把文本反转），把 SCRIPT 的第一段
  *      换成调用你的工具，再跑——看工具循环跑起来。
  *
@@ -29,8 +29,8 @@ import type { AgentLoop } from '@mini-dsh/agent'
 
 // ↓↓↓ 练习区 1：这段台词本就是"模型的剧本"（两次工具往返 + 最终回答）↓↓↓
 const SCRIPT = [
-  { toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'notes.txt' } }] },
-  { toolCalls: [{ id: 'c2', name: 'edit_file', arguments: { path: 'notes.txt', oldText: '未完成', newText: '已完成' } }] },
+  { toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'notes.txt' } }] },
+  { toolCalls: [{ id: 'c2', name: 'edit', arguments: { file_path: 'notes.txt', old_string: '未完成', new_string: '已完成' } }] },
   { content: '好，我把 notes.txt 里的「未完成」改成了「已完成」。' },
 ]
 // ↑↑↑ 练习区 1 ↑↑↑

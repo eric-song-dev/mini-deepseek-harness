@@ -122,7 +122,7 @@ export const readFileTool = Object.assign(
   { inject: ['tools'] },
 )
 
-/** write_file 工具插件。 */
+/** write 工具插件。 */
 export const writeFileTool = Object.assign(
   function writeFileTool(ctx: Context): void {
     const off = ctx.tools.register(createWriteFileTool())
@@ -131,7 +131,7 @@ export const writeFileTool = Object.assign(
   { inject: ['tools'] },
 )
 
-/** edit_file 工具插件。 */
+/** edit 工具插件。 */
 export const editFileTool = Object.assign(
   function editFileTool(ctx: Context): void {
     const off = ctx.tools.register(createEditFileTool())

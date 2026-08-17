@@ -18,7 +18,7 @@ M3 结束时，`pnpm demo:tools` 在终端里打印：
 #2  turn/start
 #3  user             {"content":"帮我把 notes.txt 的状态改成已完成"}
 #4  assistant        {"content":"","toolCalls":[...]}
-#5  tool             {"name":"read_file",...}
+#5  tool             {"name":"read","input":{"file_path":...},"output":"..."}
 ...
 ```
 

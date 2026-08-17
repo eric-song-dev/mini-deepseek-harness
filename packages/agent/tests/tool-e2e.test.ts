@@ -60,8 +60,8 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
 
   it('模型读文件→改文件→回答：真实文件被改、全量事件入日志、模型每步看到真工具结果', async () => {
     const runtime = await boot([
-      { toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
-      { toolCalls: [{ id: 'c2', name: 'edit_file', arguments: { path: 'a.txt', oldText: '旧', newText: '新' } }] },
+      { toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
+      { toolCalls: [{ id: 'c2', name: 'edit', arguments: { file_path: 'a.txt', old_string: '旧', new_string: '新' } }] },
       { content: '文件已更新。' },
     ])
     const session = await runtime.manager.create({ title: 'M3 端到端', cwd: workspace })
@@ -87,13 +87,13 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
       'turn/end',
     ])
     expect(session.log[5]!.payload).toEqual({
-      name: 'read_file',
-      input: { path: 'a.txt' },
+      name: 'read',
+      input: { file_path: 'a.txt' },
       output: 'M3 之前的旧内容',
     })
     expect(session.log[8]!.payload).toEqual({
-      name: 'edit_file',
-      input: { path: 'a.txt', oldText: '旧', newText: '新' },
+      name: 'edit',
+      input: { file_path: 'a.txt', old_string: '旧', new_string: '新' },
       output: { path: resolve(workspace, 'a.txt'), replaced: true },
     })
     expect(session.log[9]!.payload).toEqual({ content: '文件已更新。', usage: { inputTokens: 1, outputTokens: 1 } })
@@ -103,7 +103,7 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
     expect(runtime.fake.requests[1]!.messages).toEqual([
       { role: 'system', content: '你是文件助手' },
       { role: 'user', content: '帮我更新 a.txt' },
-      { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+      { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
       { role: 'tool', toolCallId: 'c1', content: '"M3 之前的旧内容"' },
     ])
 
@@ -136,7 +136,7 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
     let id: string
     {
       const runtime = await boot([
-        { toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+        { toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
         { content: '读完了。' },
       ])
       const session = await runtime.manager.create({ title: 'M3 resume', cwd: workspace })
@@ -157,7 +157,7 @@ describe('端到端：真 bash/fs 工具完成读→改→答（M3）', () => {
       expect(runtime.fake.requests[0]!.messages).toEqual([
         { role: 'system', content: '你是文件助手' },
         { role: 'user', content: '读一下 a.txt' },
-        { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+        { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
         { role: 'tool', toolCallId: 'c1', content: '"M3 之前的旧内容"' },
         { role: 'assistant', content: '读完了。' },
         { role: 'user', content: '刚才读到什么？' },

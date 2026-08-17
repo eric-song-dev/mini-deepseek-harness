@@ -81,7 +81,7 @@ describe('createFakeLlm（假 LLM，M2）', () => {
     const llm = createFakeLlm({
       replies: [
         { toolCalls: [{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }] },
-        { toolCalls: [{ id: 'c2', name: 'edit', arguments: { path: 'a.txt', oldText: '旧', newText: '新' } }] },
+        { toolCalls: [{ id: 'c2', name: 'edit', arguments: { file_path: 'a.txt', old_string: '旧', new_string: '新' } }] },
         { content: '文件已更新。' },
       ],
     })
@@ -90,7 +90,7 @@ describe('createFakeLlm（假 LLM，M2）', () => {
     const third = await llm.chat([{ role: 'user', content: 'x' }])
     expect(first.toolCalls).toEqual([{ id: 'c1', name: 'read', arguments: { path: 'a.txt' } }])
     expect(second.toolCalls).toEqual([
-      { id: 'c2', name: 'edit', arguments: { path: 'a.txt', oldText: '旧', newText: '新' } },
+      { id: 'c2', name: 'edit', arguments: { file_path: 'a.txt', old_string: '旧', new_string: '新' } },
     ])
     expect(third.toolCalls).toBeUndefined()
     expect(third.content).toBe('文件已更新。')

@@ -65,7 +65,7 @@ export function runLlmContract(harness: LlmContractHarness): void {
         {
           role: 'assistant',
           content: '',
-          toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }],
+          toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }],
         },
         { role: 'tool', toolCallId: 'c1', content: JSON.stringify({ content: '文件内容' }) },
       ]

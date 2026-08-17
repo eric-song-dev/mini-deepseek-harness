@@ -61,9 +61,9 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         seq: 3,
         type: 'assistant',
         ts: 2,
-        payload: { content: '', toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }] },
+        payload: { content: '', toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }] },
       },
-      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read_file', input: { path: 'a.txt' } } },
+      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read', input: { file_path: 'a.txt' } } },
     ]
 
     expect(projectMessages(events)).toEqual([
@@ -71,7 +71,7 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
       {
         role: 'assistant',
         content: '',
-        toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } }],
+        toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } }],
       },
       { role: 'tool', toolCallId: 'c1', content: '{"isError":true,"content":"工具结果丢失：日志中该调用没有结果记录"}' },
     ])
@@ -94,9 +94,9 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         seq: 7,
         type: 'assistant',
         ts: 6,
-        payload: { content: '', toolCalls: [{ id: 'new', name: 'read_file', arguments: { path: 'b.txt' } }] },
+        payload: { content: '', toolCalls: [{ id: 'new', name: 'read', arguments: { file_path: 'b.txt' } }] },
       },
-      { seq: 8, type: 'tool', ts: 7, payload: { name: 'read_file', input: { path: 'b.txt' }, output: { content: 'ok' } } },
+      { seq: 8, type: 'tool', ts: 7, payload: { name: 'read', input: { file_path: 'b.txt' }, output: { content: 'ok' } } },
     ]
 
     expect(projectMessages(events)).toEqual([
@@ -112,7 +112,7 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
       {
         role: 'assistant',
         content: '',
-        toolCalls: [{ id: 'new', name: 'read_file', arguments: { path: 'b.txt' } }],
+        toolCalls: [{ id: 'new', name: 'read', arguments: { file_path: 'b.txt' } }],
       },
       { role: 'tool', toolCallId: 'new', content: '{"content":"ok"}' },
     ])
@@ -128,18 +128,18 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         payload: {
           content: '',
           toolCalls: [
-            { id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } },
-            { id: 'c2', name: 'edit_file', arguments: { path: 'a.txt', oldText: 'x', newText: 'y' } },
+            { id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } },
+            { id: 'c2', name: 'edit', arguments: { file_path: 'a.txt', old_string: 'x', new_string: 'y' } },
           ],
         },
       },
-      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read_file', input: { path: 'a.txt' } } },
-      { seq: 5, type: 'tool', ts: 4, payload: { name: 'read_file', input: { path: 'a.txt' }, output: { content: '内容' } } },
+      { seq: 4, type: 'tool', ts: 3, payload: { name: 'read', input: { file_path: 'a.txt' } } },
+      { seq: 5, type: 'tool', ts: 4, payload: { name: 'read', input: { file_path: 'a.txt' }, output: { content: '内容' } } },
       {
         seq: 6,
         type: 'tool',
         ts: 5,
-        payload: { name: 'edit_file', input: { path: 'a.txt' }, output: { replaced: true } },
+        payload: { name: 'edit', input: { file_path: 'a.txt' }, output: { replaced: true } },
       },
     ]
 
@@ -149,8 +149,8 @@ describe('projectMessages（M2：日志投影成模型 messages）', () => {
         role: 'assistant',
         content: '',
         toolCalls: [
-          { id: 'c1', name: 'read_file', arguments: { path: 'a.txt' } },
-          { id: 'c2', name: 'edit_file', arguments: { path: 'a.txt', oldText: 'x', newText: 'y' } },
+          { id: 'c1', name: 'read', arguments: { file_path: 'a.txt' } },
+          { id: 'c2', name: 'edit', arguments: { file_path: 'a.txt', old_string: 'x', new_string: 'y' } },
         ],
       },
       { role: 'tool', toolCallId: 'c1', content: '{"content":"内容"}' },

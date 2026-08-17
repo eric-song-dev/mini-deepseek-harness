@@ -64,7 +64,7 @@ class ToolDeclaration {
   parameters: JSONSchema
 }
 class "bash 工具" as bash
-class "read_file / write_file / edit_file" as fs
+class "read / write / edit" as fs
 class "默认注册表 createToolRegistry" as registry
 class "agentLoop（唯一循环）" as loop {
   runTurn(): 工具调用循环
@@ -108,12 +108,12 @@ loop -> log: emit turn/start
 loop -> log: emit user {content}
 loop -> log: 读日志快照 → projectMessages
 loop -> llm: chat(messages, { tools: 声明列表 })
-llm --> loop: { content:'', toolCalls:[{id:c1, name:'read_file', arguments:{path:'notes.txt'}}] }
+llm --> loop: { content:'', toolCalls:[{id:c1, name:'read', arguments:{file_path:'notes.txt'}}] }
 loop -> log: emit assistant {content:'', toolCalls:[c1]}
-loop -> log: emit tool {name:'read_file', input:{path}}    「调用事件」
-loop -> tools: execute('read_file', {path}, {cwd})
+loop -> log: emit tool {name:'read', input:{file_path}}    「调用事件」
+loop -> tools: execute('read', {file_path}, {cwd})
 tools -> tools: pre-execute hooks（approval 预留位，MVP 放行）
-tools -> impl: execute({path}, {cwd})
+tools -> impl: execute({file_path}, {cwd})
 impl --> tools: 'M3 之前的旧内容'
 tools -> tools: post-execute hooks（结果整形）
 tools --> loop: 'M3 之前的旧内容'
@@ -150,11 +150,11 @@ toolCalls，按顺序对应后面的结果事件"。轨迹里调用/结果两条
 
 ```jsonc
 // 返回（seam 内部形状，arguments 已是对象）
-{ "content": "", "toolCalls": [{ "id": "c1", "name": "read_file", "arguments": { "path": "notes.txt" } }] }
+{ "content": "", "toolCalls": [{ "id": "c1", "name": "read", "arguments": { "file_path": "notes.txt" } }] }
 
 // adapter 发给 API 的 wire 形状（arguments 是 JSON 串）
 { "role": "assistant", "content": "", "tool_calls": [
-  { "id": "c1", "type": "function", "function": { "name": "read_file", "arguments": "{\"path\":\"notes.txt\"}" } }
+  { "id": "c1", "type": "function", "function": { "name": "read", "arguments": "{\"file_path\":\"notes.txt\"}" } }
 ]}
 
 // 结果回填给模型的 tool 消息（wire 形状）
@@ -182,12 +182,12 @@ toolCalls，按顺序对应后面的结果事件"。轨迹里调用/结果两条
 ```ts
 {
   type: 'object',
-  properties: { command: { type: 'string' }, cwd: { type: 'string' } },
+  properties: { command: { type: 'string' }, workdir: { type: 'string' } },
   required: ['command'],
 }
 ```
 
-模型读到它就知道"调用 bash 时必须给 `command`，可选 `cwd`"。声明写得越清楚，模型调用
+模型读到它就知道"调用 bash 时必须给 `command`，可选 `workdir`（上游同款参数名）"。声明写得越清楚，模型调用
 越准——这是 prompt engineering 之外的另一种"调教"：**schema 就是工具的使用说明**。
 
 ### 3.3 执行管线与 hook
@@ -223,7 +223,7 @@ hook 是"能力扩展点"的教科书例子：**扩展功能时加的是 hook，
 
 bash 工具执行 `exit 3` 时**不抛错**，而是返回 `{stdout, stderr, exitCode: 3}`。为什么？
 因为模型需要看到"失败原因"（stderr + 退出码）来决定下一步，而不是收到一个笼统的
-"工具炸了"。规则：**命令跑完了（哪怕退出码非零）就是成功的结果；进程起不来（如 cwd
+"工具炸了"。规则：**命令跑完了（哪怕退出码非零）就是成功的结果；进程起不来（如 workdir
 不存在）才是异常**。同理 read/edit 对"文件不存在"是报错（读不到就是读不到），而
 write 会自动建父目录（工具要能"建新东西"）。
 
@@ -325,8 +325,8 @@ pnpm demo:tools --clean
 
 ### 步骤 2：改剧本，看文件与日志怎么变
 
-打开 `packages/agent/examples/my-tools.ts`，找到"练习区 1"的 `SCRIPT`，把 edit_file 的
-`newText` 从 `'已完成'` 改成 `'搞定'`（三处台词里的文字也顺手改成「搞定」）：
+打开 `packages/agent/examples/my-tools.ts`，找到"练习区 1"的 `SCRIPT`，把 edit 的
+`new_string` 从 `'已完成'` 改成 `'搞定'`（三处台词里的文字也顺手改成「搞定」）：
 
 ```bash
 pnpm tsx packages/agent/examples/my-tools.ts
@@ -371,7 +371,7 @@ tool（调用事件）→ tool（结果事件，`output.isError === true`）。�
 M3 逐个**串行**执行：一个调用一个执行、一对事件。并行执行是 backlog。多个调用都执行完
 再问模型，结果消息按调用顺序回填。
 
-**Q：模型编造了参数（比如 read_file 传了数字）怎么办？**
+**Q：模型编造了参数（比如 read 传了数字）怎么办？**
 工具实现按声明取字段，取不到就是 `undefined`，执行会以报错/失败结果暴露。adapter 对
 非法 JSON 的 arguments 回退空对象，不让坏参数打崩整个 loop。
 
@@ -406,8 +406,8 @@ assistant 变成流式打字机。你已经见过了"轨迹的原料"，M4 会�
 ```ts
 // 练习区 1：模型的剧本（两次工具往返 + 最终回答）
 const SCRIPT = [
-  { toolCalls: [{ id: 'c1', name: 'read_file', arguments: { path: 'notes.txt' } }] },
-  { toolCalls: [{ id: 'c2', name: 'edit_file', arguments: { path: 'notes.txt', oldText: '未完成', newText: '已完成' } }] },
+  { toolCalls: [{ id: 'c1', name: 'read', arguments: { file_path: 'notes.txt' } }] },
+  { toolCalls: [{ id: 'c2', name: 'edit', arguments: { file_path: 'notes.txt', old_string: '未完成', new_string: '已完成' } }] },
   { content: '好，我把 notes.txt 里的「未完成」改成了「已完成」。' },
 ]
 
