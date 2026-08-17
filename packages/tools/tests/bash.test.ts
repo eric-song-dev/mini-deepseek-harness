@@ -8,7 +8,7 @@ import { bashTool, createBashTool, toolRegistry } from '@mini-dsh/tools'
 /**
  * bash 工具契约（M3 spec 任务 3）：
  * stdout/stderr/exit code 透传；命令执行失败也算"成功的结果"（exit code 是输出不是异常——
- * 模型需要看到失败原因）；cwd 按 input.cwd ?? 会话 ctx.cwd。
+ * 模型需要看到失败原因）；workdir 按 input.workdir ?? 会话 ctx.cwd（上游同款参数名）。
  */
 describe('bash 工具', () => {
   let dir: string
@@ -49,14 +49,14 @@ describe('bash 工具', () => {
     expect(output.stderr).toContain('definitely-not-a-command-xyz')
   })
 
-  it('cwd 生效：相对 ctx.cwd 执行', async () => {
+  it('workdir 生效：相对 ctx.cwd 执行', async () => {
     const output = (await bash.execute({ command: 'pwd' }, { cwd: dir })) as { stdout: string }
     // macOS 上 /var 是 /private/var 的符号链接，shell 的 pwd 输出物理路径，用 realpath 归一。
     expect(await realpath(output.stdout.trim())).toBe(await realpath(dir))
   })
 
-  it('input.cwd 覆盖会话 cwd', async () => {
-    const output = (await bash.execute({ command: 'pwd', cwd: '/' }, { cwd: dir })) as { stdout: string }
+  it('input.workdir 覆盖会话 cwd', async () => {
+    const output = (await bash.execute({ command: 'pwd', workdir: '/' }, { cwd: dir })) as { stdout: string }
     expect(output.stdout.trim()).toBe('/')
   })
 
@@ -66,7 +66,7 @@ describe('bash 工具', () => {
     ).rejects.toThrow()
   })
 
-  it('bashTool 插件把工具注册进 tools 服务（声明带 command/cwd schema）', async () => {
+  it('bashTool 插件把工具注册进 tools 服务（声明带 command/workdir schema，上游同款参数名）', async () => {
     const { ctx, dispose } = await createTestContext()
     await ctx.plugin(toolRegistry)
     await ctx.plugin(bashTool)
@@ -76,7 +76,10 @@ describe('bash 工具', () => {
       expect(tools.list()).toEqual([
         expect.objectContaining({
           name: 'bash',
-          parameters: expect.objectContaining({ required: ['command'] }),
+          parameters: expect.objectContaining({
+            required: ['command'],
+            properties: expect.objectContaining({ workdir: expect.any(Object) }),
+          }),
         }),
       ])
     } finally {
