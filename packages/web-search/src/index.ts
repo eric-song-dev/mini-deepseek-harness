@@ -8,3 +8,7 @@ export type {
   WebSearchResult,
   WebSearchSource,
 } from './web'
+export { DEFAULT_FAKE_RESULT, FAKE_PROVIDER_ID, FakeWebSearchExhaustedError, createFakeWebSearch, fakeWebSearch } from './fake'
+export type { FakeWebSearchConfig } from './fake'
+export { WEB_SEARCH_MAX_RESULTS, WEB_SEARCH_TIMEOUT_MS, WEB_SEARCH_TOOL_NAME, createWebSearchTool, webSearchTool } from './tool'
+export type { WebSearchToolConfig } from './tool'
