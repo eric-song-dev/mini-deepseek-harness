@@ -1,0 +1,22 @@
+{
+  "name": "@mini-dsh/web-search",
+  "version": "0.1.0",
+  "description": "web search 能力 seam（ctx.web）：provider 注册表 + 执行时选择 + fake/deepseek 双提供方 + web_search 工具",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-dsh/tools": "workspace:*",
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@mini-dsh/agent": "workspace:*",
+    "@mini-dsh/llm": "workspace:*",
+    "@mini-dsh/session": "workspace:*",
+    "@mini-dsh/test-support": "workspace:*"
+  }
+}

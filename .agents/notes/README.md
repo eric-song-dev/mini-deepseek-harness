@@ -32,10 +32,11 @@
 
 ## 当前状态指针
 
-- **M0–M9 全部完成，M10（web search）已排期** —— 下一个工作单元 =
-  **M10（web search 插件）**：spec 为 draft（`docs/milestones/M10.md`），
-  开工先按 `docs/references/upstream.md` 的 M10 索引读上游文档与代码、再定稿 spec、
-  然后 TDD 实现（可插拔已实现，M10 用其落地第一个外部 HTTP 工具）。
+- **M0–M9 全部完成，M10（web search）进行中** —— 当前工作单元 =
+  **M10（web search 插件）**：上游调研完成（`proposed/2026-08-18-m10-web-search-上游调研.md`），
+  spec 已定稿置 proposed（`docs/milestones/M10.md`），TDD 实现中
+  （T2 web 能力 seam → T3 fake → T4 工具 → T5 deepseek → T6 e2e+HMR →
+  T7 demo → T8 Web 接入 → T9 教程）。可插拔已实现，M10 用其落地第一个外部 HTTP 工具。
   排期变更（2026-08-18 用户拍板）：plan / todo 退回 backlog（与 goal 合并回
   requirements §6 backlog 第 5 项）；web search 由 M11 重编号为 M10 ——
   见 `proposed/2026-08-18-m10-plan-todo-退回-backlog.md`。
