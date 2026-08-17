@@ -36,6 +36,14 @@ export class MaxStepsExceededError extends Error {
 }
 
 /**
+ * 工具执行错误的归一化结果（与 mcp 执行器、崩溃恢复合成的 isError 结果同构：
+ * `{ isError: true, content: string }`）——模型靠这个形状识别"失败了但可纠正"。
+ */
+function toolErrorResult(error: unknown): { isError: true; content: string } {
+  return { isError: true, content: String(error) }
+}
+
+/**
  * agent loop：全仓唯一的"拿输入→调模型→写输出"具体循环逻辑。
  *
  * 一轮的完整过程（每个动作都落会话日志）：
@@ -44,8 +52,9 @@ export class MaxStepsExceededError extends Error {
  *   → assistant(最终) → turn/end(done)
  * 流式（M4）：config.stream 开启时，llm.chat 期间分片以 assistant/stream 事件逐条落日志，
  * assistant 终事件仍是拼接全文；无分片的实现自动回退为只落终事件。
- * 异常时：turn/end(reason:'crash') + 原错误向上抛；工具步数超限：turn/end(reason:'limit')
- * + MaxStepsExceededError 上抛。
+ * 工具错误（含未知工具）：归一化为 isError 结果回填模型，轮次继续——模型看到失败原因
+ * 自行纠正（与 bash 的 exit code 同款纪律）；LLM 等其他异常：turn/end(reason:'crash')
+ * + 原错误向上抛；工具步数超限：turn/end(reason:'limit') + MaxStepsExceededError 上抛。
  *
  * 工具往返的输入同样来自日志投影（"输入读日志"延续到循环内部）：每步重新投影，
  * 上一步的工具结果以 role:'tool' 消息进入下一步的模型输入（M3 spec 决策 8：
@@ -130,10 +139,18 @@ export const agentLoop = Object.assign(
             // 一次工具调用落两条 tool 事件：调用（只有 input）与结果（带 output），
             // 中间隔着执行——轨迹检查器由此区分"要了什么"与"得到了什么"。
             ctx.emit('tool', { name: call.name, input: call.arguments })
-            // M8：agent = 会话 ctx（ToolContext 透传）。loop 是唯一知道"当前会话"的组件；
-            // subagent/workflow 工具从这里读谱系/日志/事件总线——loop 本体无任何
-            // subagent 专属逻辑，只此一行透传。
-            const output = await tools.execute(call.name, call.arguments, { cwd, agent: ctx })
+            // 工具错误是**结果**不是异常（与 bash 的 exit code、MCP 的 isError 同款纪律）：
+            // 抛错被归一化成 isError 结果回填模型，模型看到失败原因可自行纠正；
+            // 只有 LLM 失败等其他异常才走 turn/end(crash)。
+            let output: unknown
+            try {
+              // M8：agent = 会话 ctx（ToolContext 透传）。loop 是唯一知道"当前会话"的组件；
+              // subagent/workflow 工具从这里读谱系/日志/事件总线——loop 本体无任何
+              // subagent 专属逻辑，只此一行透传。
+              output = await tools.execute(call.name, call.arguments, { cwd, agent: ctx })
+            } catch (error) {
+              output = toolErrorResult(error)
+            }
             ctx.emit('tool', { name: call.name, input: call.arguments, output })
           }
         }
